@@ -10,6 +10,7 @@
   <img src="ressources/ChessCheatAssistant.gif" width="700" alt="Chess Cheat Assistant Demo" />
 </div>
 ---
+
 ## Getting Started
 
 1. <b>Clone the repository:</b>
