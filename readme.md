@@ -1,19 +1,12 @@
 <div align="center">
-  <img src="ressources/icon.png" alt="Chess Cheat Assistant Icon" width="120" />
-  <h1>Chess Cheat Assistant <br><small>by Nolan Cacheux</small></h1>
-  <p><b>nolancacheux/chess-cheat-assistant</b></p>
-  <p><i>Chess Assistant for chess.com</i></p>
+  <video src="ressources/Chess Cheat Assistant.mp4" width="700" controls poster="ressources/chess-assistant.png"></video>
 </div>
 
-
 <div align="center">
-  <video src="ressources/Chess Cheat Assistant.mp4" width="500" controls poster="ressources/chess-assistant.png"></video>
-  <br/>
-  <img src="ressources/chess-assistant.png" alt="Chess Assistant UI" width="220" />
-  <img src="ressources/real-time-suggestion.png" alt="Real-Time Suggestion" width="220" />
-  <img src="ressources/maximum-level-win.png" alt="Advantage Tracking" width="220" />
-  <img src="ressources/color-choose.png" alt="Color Selection" width="220" />
-  <img src="ressources/full-board.png" alt="Full Board Analysis" width="220" />
+  <img src="ressources/icon.png" alt="Chess Cheat Assistant Icon" width="200" />
+  <h1>Chess Cheat Assistant <br></h1>
+  <p><b>nolancacheux/chess-cheat-assistant</b></p>
+  <p><i>Chess Assistant for chess.com</i></p>
 </div>
 
 ---
@@ -27,9 +20,39 @@
 2. <b>Load the extension in Chrome:</b>
    - Go to <code>chrome://extensions/</code>
    - Enable <b>Developer Mode</b>
-   - Click <b>Load Unpacked</b> and select the project folder
+   - Click <b>Load Unpacked</b> and select the project folder you cloned. (e.g., `chess-cheat-assistant`)
 3. <b>Go to chess.com and start a game.</b>
-4. <b>Click the extension icon and activate the assistant.</b>
+4. <b>Activate the assistant.</b>
+
+---
+
+## Features
+
+### Real-Time Move Analysis
+<div align="center">
+  <img src="ressources/real-time-suggestion.png" alt="Real-Time Suggestion" width="400" />
+</div>
+As soon as you activate the assistant, it connects to the chess.com board and uses a built-in Stockfish engine to analyze the current position. You’ll see the best move, evaluation score, and analysis depth update live as the game progresses.
+
+### Advantage Tracking
+<div align="center">
+  <img src="ressources/maximum-level-win.png" alt="Advantage Tracking" width="400" />
+</div>
+A dynamic advantage bar that visually represents which side is ahead, based on the engine’s evaluation.
+
+### Color Selection & Board Orientation
+<div align="center">
+  <img src="ressources/color-choose.png" alt="Color Selection" width="400" />
+</div>
+You can choose to play as White or Black, and the assistant adapts its analysis and move suggestions accordingly. Can be useful for players who want to practice against the engine or analyze their own games.
+
+### Full Board Analysis & Move Highlighting
+<div align="center">
+  <img src="ressources/full-board.png" alt="Full Board Analysis" width="400" />
+</div>
+The assistant overlays suggested moves directly on the chess.com board, using animated highlights and opacity changes for easy visualization.
+
+---
 
 ## Educational Purpose 
 
@@ -47,28 +70,6 @@ Chess Cheat Assistant is a powerful, interactive browser extension for chess.com
 
 ---
 
-## Features
-
-### Real-Time Move Analysis
-As soon as you activate the assistant, it connects to the chess.com board and uses a built-in Stockfish engine to analyze the current position. You’ll see the best move, evaluation score, and analysis depth update live as the game progresses.
-
-### Advantage Tracking
-A dynamic advantage bar that visually represents which side is ahead, based on the engine’s evaluation.
-
-### Color Selection & Board Orientation
-You can choose to play as White or Black, and the assistant adapts its analysis and move suggestions accordingly. Can be useful for players who want to practice against the engine or analyze their own games.
-
-### Full Board Analysis & Move Highlighting
-The assistant overlays suggested moves directly on the chess.com board, using animated highlights and opacity changes for easy visualization.
-
-### Auto-Play Demonstration
-For demonstration and research, the assistant can automatically play the best move for you. This shows how browser automation can interact with chess boards, and how auto-play bots work.
-
-### Analysis History & Move Quality
-Every analysis is logged in a history panel, so you can review the engine’s suggestions, scores, and depths over time.
-
----
-
 ## How Does It Work? (Technical Overview)
 - <b>Board State Extraction:</b> The extension reads the chess.com board and generates a FEN string for the current position.
 - <b>Stockfish Integration:</b> A web worker runs Stockfish in the background, analyzing the position at configurable depth.
@@ -77,9 +78,10 @@ Every analysis is logged in a history panel, so you can review the engine’s su
 - <b>Analysis History:</b> All engine outputs are logged and displayed in a sortable, filterable table.
 - <b>Advantage Bar:</b> The evaluation is mapped to a visual bar for instant feedback.
 
-
+---
 
 ## Repository & License
 - <b>Repository:</b> https://github.com/nolancacheux/chess-cheat-assistant
 - <b>License:</b> MIT
 - <b>Author:</b> Nolan Cacheux
+
