@@ -1,0 +1,47 @@
+{
+  "manifest_version": 3,
+  "name": "Chess Cheat Assistant",
+  "short_name": "ChessAssistant",
+  "version": "3.0.0",
+  "description": "A hands-on, educational Chrome extension for chess.com that demonstrates chess engine analysis, move suggestions, advantage tracking, and browser automation. Learn how Stockfish evaluates positions, how browser extensions interact with chess boards, and how move automation works. For research, learning, and chess improvement only. Created by Nolan Cacheux. Repository: https://github.com/nolancacheux/chess-cheat-assistant.",
+  "author": "Nolan Cacheux",
+  "icons": {
+    "16": "ressources/icon.png",
+    "48": "ressources/icon.png",
+    "128": "ressources/icon.png"
+  },
+  "action": {
+    "default_icon": "ressources/icon.png",
+    "default_title": "Chess Cheat Assistant"
+  },
+  "content_scripts": [
+    {
+      "js": ["src/assistant.js"],
+      "matches": [
+        "https://www.chess.com/*",
+        "https://chess.com/*"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "ressources/chess-assistant.png",
+        "ressources/color-choose.png",
+        "ressources/full-board.png",
+        "ressources/icon.png",
+        "ressources/maximum-level-win.png",
+        "ressources/real-time-suggestion.png"
+      ],
+      "matches": ["https://*.chess.com/*"]
+    }
+  ],
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting"
+  ],
+  "homepage_url": "https://github.com/nolancacheux/chess-cheat-assistant",
+  "incognito": "split"
+}

@@ -1,0 +1,49 @@
+{
+  "name": "chess-cheat-assistant",
+  "version": "3.0.0",
+  "description": "A hands-on, educational Chrome extension for chess.com that demonstrates chess engine analysis, move suggestions, advantage tracking, and browser automation. Learn how Stockfish evaluates positions, how browser extensions interact with chess boards, and how move automation works. For research, learning, and chess improvement only. Created by Nolan Cacheux.",
+  "main": "src/assistant.js",
+  "scripts": {
+    "test": "echo \"No test specified\" && exit 0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nolancacheux/chess-cheat-assistant.git"
+  },
+  "author": "Nolan Cacheux",
+  "license": "MIT",
+  "keywords": [
+    "chess",
+    "chess.com",
+    "chess assistant",
+    "browser extension",
+    "stockfish",
+    "move suggestion",
+    "position evaluation",
+    "advantage tracking",
+    "auto play",
+    "chess improvement",
+    "educational",
+    "learning",
+    "javascript",
+    "chrome extension",
+    "move analysis",
+    "board automation",
+    "chess engine",
+    "user interface",
+    "real-time analysis",
+    "move highlighting",
+    "open source"
+  ],
+  "bugs": {
+    "url": "https://github.com/nolancacheux/chess-cheat-assistant/issues"
+  },
+  "homepage": "https://github.com/nolancacheux/chess-cheat-assistant#readme",
+  "dependencies": {
+    "stockfish.wasm": "^0.10.0"
+  },
+  "engines": {
+    "node": ">=14.0.0",
+    "npm": ">=6.0.0"
+  }
+}
