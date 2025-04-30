@@ -1,8 +1,4 @@
 <div align="center">
-  <img src="ressources/ChessCheatAssistant.gif" width="700" alt="Chess Cheat Assistant Demo" />
-</div>
-
-<div align="center">
   <img src="ressources/icon.png" alt="Chess Cheat Assistant Icon" width="200" />
   <h1>Chess Cheat Assistant <br></h1>
   <p><b>nolancacheux/chess-cheat-assistant</b></p>
@@ -10,7 +6,10 @@
 </div>
 
 ---
-
+<div align="center">
+  <img src="ressources/ChessCheatAssistant.gif" width="700" alt="Chess Cheat Assistant Demo" />
+</div>
+---
 ## Getting Started
 
 1. <b>Clone the repository:</b>
