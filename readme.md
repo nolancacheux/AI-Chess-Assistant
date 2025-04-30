@@ -1,5 +1,5 @@
 <div align="center">
-  <video src="ressources/Chess Cheat Assistant.mp4" width="700" controls poster="ressources/chess-assistant.png"></video>
+  <img src="ressources/ChessCheatAssistant.gif" width="700" alt="Chess Cheat Assistant Demo" />
 </div>
 
 <div align="center">
@@ -36,7 +36,7 @@ As soon as you activate the assistant, it connects to the chess.com board and us
 
 ### Advantage Tracking
 <div align="center">
-  <img src="ressources/maximum-level-win.png" alt="Advantage Tracking" width="400" />
+  <img src="ressources/full-board.png" alt="Full Board Analysis" width="400" />
 </div>
 A dynamic advantage bar that visually represents which side is ahead, based on the engine’s evaluation.
 
@@ -46,11 +46,11 @@ A dynamic advantage bar that visually represents which side is ahead, based on t
 </div>
 You can choose to play as White or Black, and the assistant adapts its analysis and move suggestions accordingly. Can be useful for players who want to practice against the engine or analyze their own games.
 
-### Full Board Analysis & Move Highlighting
+### Level Maximum defeated (3200 Elos) 
 <div align="center">
-  <img src="ressources/full-board.png" alt="Full Board Analysis" width="400" />
+  <img src="ressources/maximum-level-win.png" alt="Advantage Tracking" width="400" />
 </div>
-The assistant overlays suggested moves directly on the chess.com board, using animated highlights and opacity changes for easy visualization.
+The assistant has won against the maximum level of chess.com, which is 3200 Elos.
 
 ---
 
@@ -84,4 +84,3 @@ Chess Cheat Assistant is a powerful, interactive browser extension for chess.com
 - <b>Repository:</b> https://github.com/nolancacheux/chess-cheat-assistant
 - <b>License:</b> MIT
 - <b>Author:</b> Nolan Cacheux
-
