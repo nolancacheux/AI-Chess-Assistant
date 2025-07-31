@@ -3,7 +3,7 @@
   "name": "Chess Cheat Assistant",
   "short_name": "ChessAssistant",
   "version": "3.0.0",
-  "description": "A hands-on, educational Chrome extension for chess.com that demonstrates chess engine analysis, move suggestions, advantage tracking, and browser automation. Learn how Stockfish evaluates positions, how browser extensions interact with chess boards, and how move automation works. For research, learning, and chess improvement only. Created by Nolan Cacheux. Repository: https://github.com/nolancacheux/chess-cheat-assistant.",
+  "description": "🏆 Educational chess assistant for chess.com with real-time Stockfish analysis, intelligent move suggestions, and interactive learning features. Perfect for understanding chess engines, position evaluation, and browser automation. Includes advantage tracking, move highlighting, and automated gameplay demonstration. For educational and research purposes only - enhance your chess knowledge responsibly!",
   "author": "Nolan Cacheux",
   "icons": {
     "16": "ressources/icon.png",
