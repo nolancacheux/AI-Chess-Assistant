@@ -16,7 +16,15 @@
   },
   "content_scripts": [
     {
-      "js": ["src/assistant.js"],
+      "js": [
+        "src/config.js",
+        "src/state.js",
+        "src/board.js",
+        "src/engine.js",
+        "src/ui.js",
+        "src/autoplay.js",
+        "src/main.js"
+      ],
       "matches": [
         "https://www.chess.com/*",
         "https://chess.com/*"
