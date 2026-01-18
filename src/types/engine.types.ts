@@ -49,7 +49,7 @@ export type EngineEventListener = (event: EngineEvent) => void;
 
 /** Default engine configuration */
 export const DEFAULT_ENGINE_CONFIG: EngineConfig = {
-  workerPath: '/bundles/app/js/vendor/jschessengine/stockfish.asm.1abfa10c.js',
+  workerPath: 'engine/stockfish.js', // Relative path, will be resolved to extension URL
   defaultDepth: 15,
-  autoPlayDepth: 2,
+  autoPlayDepth: 5, // Increased for better auto-play with our own engine
 };

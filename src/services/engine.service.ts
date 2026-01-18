@@ -32,12 +32,22 @@ export class EngineService {
 
   /**
    * Initialize the Stockfish engine
+   * Uses chrome.runtime.getURL to load our bundled Stockfish WASM
    */
   public initialize(): boolean {
     try {
-      this.worker = new Worker(this.config.workerPath);
+      // Get the full URL for the Stockfish worker from our extension
+      const workerUrl = this.getWorkerUrl();
+      console.log('[EngineService] Loading Stockfish from:', workerUrl);
+
+      this.worker = new Worker(workerUrl);
       this.setupMessageHandler();
+
+      // Initialize UCI protocol
+      this.worker.postMessage('uci');
+
       this.state = 'idle';
+      this.emit({ type: 'ready', data: null });
       return true;
     } catch (error) {
       console.error('[EngineService] Failed to initialize:', error);
@@ -45,6 +55,19 @@ export class EngineService {
       this.emit({ type: 'error', data: error as Error });
       return false;
     }
+  }
+
+  /**
+   * Get the full URL for the worker script
+   * Uses chrome.runtime.getURL for extension-bundled resources
+   */
+  private getWorkerUrl(): string {
+    // Check if we're in a Chrome extension context
+    if (typeof chrome !== 'undefined' && chrome.runtime?.getURL) {
+      return chrome.runtime.getURL(this.config.workerPath);
+    }
+    // Fallback for non-extension context (development)
+    return this.config.workerPath;
   }
 
   /**

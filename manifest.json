@@ -26,7 +26,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["assets/*"],
+      "resources": ["assets/*", "engine/*"],
       "matches": ["https://*.chess.com/*"]
     }
   ],
