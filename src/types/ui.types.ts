@@ -22,19 +22,19 @@ export interface ThemeColors {
   error: string;
 }
 
-/** Default theme */
+/** Default theme - Modern dark theme */
 export const DEFAULT_THEME: ThemeColors = {
-  primary: '#2c3e50',
-  secondary: '#34495e',
-  accent: '#e74c3c',
-  background: '#f8f9fa',
-  surface: '#ecf0f1',
-  text: '#2c3e50',
-  textMuted: '#7f8c8d',
-  border: '#e9ecef',
-  success: '#2ecc71',
-  warning: '#f39c12',
-  error: '#e74c3c',
+  primary: '#6366f1',    // Indigo
+  secondary: '#818cf8',  // Light indigo
+  accent: '#22d3ee',     // Cyan
+  background: '#0f172a', // Slate 900
+  surface: '#1e293b',    // Slate 800
+  text: '#f1f5f9',       // Slate 100
+  textMuted: '#94a3b8',  // Slate 400
+  border: '#334155',     // Slate 700
+  success: '#22c55e',    // Green
+  warning: '#f59e0b',    // Amber
+  error: '#ef4444',      // Red
 };
 
 /** Panel visibility state */

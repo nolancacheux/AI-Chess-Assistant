@@ -55,36 +55,33 @@ export class EngineService {
   }
 
   /**
-   * Try to use chess.com's bundled Stockfish engine
+   * Try to use publicly available Stockfish engines
    */
   private tryChessComEngine(): boolean {
-    // Find Stockfish script tags on the page
-    const scripts = Array.from(document.querySelectorAll('script[src*="stockfish"]'));
-    const stockfishPaths = scripts
-      .map((s) => (s as HTMLScriptElement).src)
-      .filter((src) => src.includes('stockfish'));
-
-    // Common chess.com Stockfish paths (updated)
-    const defaultPaths = [
-      'https://www.chess.com/bundles/app/js/vendor/stockfish-nnue.wasm/sf17-79.js',
-      'https://www.chess.com/bundles/app/js/vendor/stockfish.nnue.wasm.js',
-      'https://www.chess.com/bundles/app/js/lib/stockfish.wasm.js',
+    // Reliable public Stockfish WASM sources
+    const enginePaths = [
+      // Lichess Stockfish (most reliable)
+      'https://lichess1.org/assets/_ysdPwS/javascripts/vendor/stockfish/stockfish.wasm.js',
+      'https://lichess.org/assets/javascripts/vendor/stockfish.wasm/stockfish.js',
+      // CDN hosted Stockfish
+      'https://cdn.jsdelivr.net/npm/stockfish.js@10.0.2/stockfish.js',
+      'https://unpkg.com/stockfish.js@10.0.2/stockfish.js',
+      // Chess.com paths (may change)
+      'https://www.chess.com/bundles/app/js/vendor/stockfish.wasm/stockfish.js',
     ];
 
-    const chessComPaths = [...stockfishPaths, ...defaultPaths];
-
-    for (const path of chessComPaths) {
+    for (const path of enginePaths) {
       try {
-        console.log('[EngineService] Trying chess.com engine:', path);
+        console.log('[EngineService] Trying engine:', path);
         this.worker = new Worker(path);
         this.setupMessageHandler();
         this.worker.postMessage('uci');
         this.state = 'idle';
         this.emit({ type: 'ready', data: null });
-        console.log('[EngineService] Successfully loaded chess.com engine');
+        console.log('[EngineService] Successfully loaded engine from:', path);
         return true;
       } catch (error) {
-        console.log('[EngineService] Failed to load:', path);
+        console.log('[EngineService] Failed to load:', path, error);
         this.worker = null;
       }
     }

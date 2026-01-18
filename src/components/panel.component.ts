@@ -1,5 +1,5 @@
 /**
- * Panel Component - Main UI panel for the chess assistant
+ * Panel Component - Modern UI panel for the chess assistant
  */
 
 import type { AnalysisEntry, ColorSelectionCallback, PlayerColor, Score } from '@/types';
@@ -20,7 +20,7 @@ interface PanelCallbacks {
 }
 
 /**
- * Chess Assistant Panel
+ * Chess Assistant Panel - Modern Design
  */
 export class PanelComponent {
   private panel: HTMLElement | null = null;
@@ -32,691 +32,578 @@ export class PanelComponent {
     this.callbacks = callbacks;
   }
 
-  /**
-   * Create and mount the panel
-   */
   public create(): void {
     if (document.getElementById(PANEL_ID)) return;
-
+    this.injectStyles();
     this.panel = this.createPanel();
     document.body.appendChild(this.panel);
   }
 
-  /**
-   * Remove the panel from DOM
-   */
   public destroy(): void {
     this.panel?.remove();
     this.panel = null;
   }
 
-  /**
-   * Update status text
-   */
   public updateStatus(text: string): void {
-    const statusElement = document.getElementById('assistant-status');
+    const statusElement = document.getElementById('ca-status');
     if (statusElement) {
-      statusElement.textContent = this.isAutoPlayActive ? `${text} (Auto-play active)` : text;
+      statusElement.textContent = this.isAutoPlayActive ? `${text} (Auto)` : text;
     }
   }
 
-  /**
-   * Show color selection
-   */
   public showColorSelection(): void {
-    const container = document.getElementById('color-choice-container');
-    const controlButton = document.getElementById('assistant-control-button');
-
+    const container = document.getElementById('ca-color-selection');
+    const controlButton = document.getElementById('ca-control-btn');
     if (container) container.style.display = 'flex';
     if (controlButton) {
-      controlButton.textContent = 'Choose your color';
+      controlButton.textContent = 'Select Color';
       (controlButton as HTMLButtonElement).disabled = true;
+      controlButton.classList.add('disabled');
     }
   }
 
-  /**
-   * Hide color selection and show active state
-   */
   public showActiveState(): void {
-    const container = document.getElementById('color-choice-container');
-    const controlButton = document.getElementById('assistant-control-button');
-    const changeColorButton = document.getElementById('change-color-button');
-    const autoPlayButton = document.getElementById('auto-play-button');
+    const container = document.getElementById('ca-color-selection');
+    const controlButton = document.getElementById('ca-control-btn');
+    const secondaryBtns = document.getElementById('ca-secondary-btns');
 
     if (container) container.style.display = 'none';
     if (controlButton) {
-      controlButton.textContent = 'Deactivate';
+      controlButton.textContent = 'Stop';
       (controlButton as HTMLButtonElement).disabled = false;
+      controlButton.classList.remove('disabled');
+      controlButton.classList.add('active');
     }
-    if (changeColorButton) changeColorButton.style.display = 'block';
-    if (autoPlayButton) autoPlayButton.style.display = 'block';
+    if (secondaryBtns) secondaryBtns.style.display = 'flex';
   }
 
-  /**
-   * Show inactive state
-   */
   public showInactiveState(): void {
-    const container = document.getElementById('color-choice-container');
-    const controlButton = document.getElementById('assistant-control-button');
-    const changeColorButton = document.getElementById('change-color-button');
-    const autoPlayButton = document.getElementById('auto-play-button');
+    const container = document.getElementById('ca-color-selection');
+    const controlButton = document.getElementById('ca-control-btn');
+    const secondaryBtns = document.getElementById('ca-secondary-btns');
 
     if (container) container.style.display = 'none';
     if (controlButton) {
-      controlButton.textContent = 'Activate';
+      controlButton.textContent = 'Start';
       (controlButton as HTMLButtonElement).disabled = false;
+      controlButton.classList.remove('disabled', 'active');
     }
-    if (changeColorButton) changeColorButton.style.display = 'none';
-    if (autoPlayButton) autoPlayButton.style.display = 'none';
-
+    if (secondaryBtns) secondaryBtns.style.display = 'none';
     this.isAutoPlayActive = false;
   }
 
-  /**
-   * Update analysis history display
-   */
   public updateHistory(history: AnalysisEntry[]): void {
-    const historyPanel = document.getElementById('analysis-history');
+    const historyPanel = document.getElementById('ca-history');
     if (!historyPanel) return;
 
-    const sortedHistory = [...history].sort(
+    const sorted = [...history].sort(
       (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
     );
 
-    historyPanel.innerHTML = `
-      <table style="width: 100%; border-collapse: collapse;">
-        <thead>
-          <tr style="background: ${DEFAULT_THEME.primary}; color: white;">
-            <th style="padding: 8px; text-align: left;">Time</th>
-            <th style="padding: 8px; text-align: left;">Move</th>
-            <th style="padding: 8px; text-align: left;">Score</th>
-            <th style="padding: 8px; text-align: left;">Rating</th>
-            <th style="padding: 8px; text-align: left;">Depth</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${sortedHistory
-            .map(
-              (entry, index) => `
-            <tr class="history-entry ${entry.isFinal ? 'final-move' : ''}"
-                style="border-bottom: 1px solid ${DEFAULT_THEME.border}; opacity: ${index === 0 ? 1 : 0.6};">
-              <td style="padding: 8px;">${new Date(entry.timestamp).toLocaleTimeString()}</td>
-              <td style="padding: 8px;">${entry.move || '-'}</td>
-              <td style="padding: 8px;">${entry.score ?? '-'}</td>
-              <td style="padding: 8px;">${getMoveRating(entry.score)}</td>
-              <td style="padding: 8px;">${entry.depth || '-'}</td>
-            </tr>
-          `
-            )
-            .join('')}
-        </tbody>
-      </table>
-    `;
-  }
-
-  /**
-   * Update opening information display
-   */
-  public updateOpeningInfo(info: OpeningInfo): void {
-    const openingElement = document.getElementById('opening-info');
-    if (!openingElement) return;
-
-    if (!info.isInBook && !info.name) {
-      openingElement.style.display = 'none';
+    if (sorted.length === 0) {
+      historyPanel.innerHTML = '<div class="ca-empty">No analysis yet</div>';
       return;
     }
 
-    openingElement.style.display = 'block';
-
-    const ecoDisplay = info.eco ? `<span style="color: ${DEFAULT_THEME.accent}; font-weight: bold;">[${info.eco}]</span> ` : '';
-    const nameDisplay = info.name || 'Unknown Opening';
-    const descDisplay = info.description ? `<div style="font-size: 0.85em; color: ${DEFAULT_THEME.textMuted}; margin-top: 4px;">${info.description}</div>` : '';
-
-    let bookMovesHtml = '';
-    if (info.bookMoves.length > 0) {
-      bookMovesHtml = `
-        <div style="margin-top: 8px; font-size: 0.9em;">
-          <strong>Book moves:</strong>
-          ${info.bookMoves
-            .slice(0, 3)
-            .map(
-              (m) =>
-                `<span style="display: inline-block; margin: 2px 4px; padding: 2px 6px; background: ${DEFAULT_THEME.surface}; border-radius: 3px;">
-                  ${m.move} <span style="color: ${DEFAULT_THEME.success};">${(m.winRate * 100).toFixed(0)}%</span>
-                </span>`
-            )
-            .join('')}
-        </div>
-      `;
-    }
-
-    openingElement.innerHTML = `
-      <div style="font-size: 1.1em;">${ecoDisplay}${nameDisplay}</div>
-      ${descDisplay}
-      ${bookMovesHtml}
-    `;
-  }
-
-  /**
-   * Update pattern analysis display
-   */
-  public updatePatternInfo(analysis: PatternAnalysis): void {
-    const patternElement = document.getElementById('pattern-info');
-    if (!patternElement) return;
-
-    if (analysis.patterns.length === 0) {
-      patternElement.style.display = 'none';
-      return;
-    }
-
-    patternElement.style.display = 'block';
-
-    const severityColors = {
-      critical: '#e74c3c',
-      important: '#f39c12',
-      minor: '#3498db',
-    };
-
-    const categoryIcons = {
-      tactical: '⚔️',
-      positional: '📍',
-      structural: '🏗️',
-    };
-
-    const patternsHtml = analysis.patterns
+    historyPanel.innerHTML = sorted
       .slice(0, 5)
       .map(
-        (p) => `
-        <div style="display: flex; align-items: center; margin: 4px 0; padding: 4px 8px; background: ${DEFAULT_THEME.surface}; border-radius: 4px; border-left: 3px solid ${severityColors[p.severity]};">
-          <span style="margin-right: 6px;">${categoryIcons[p.category]}</span>
-          <span style="font-weight: 500;">${p.name}</span>
-          ${p.squares?.length ? `<span style="margin-left: auto; color: ${DEFAULT_THEME.textMuted}; font-size: 0.85em;">${p.squares.join(', ')}</span>` : ''}
+        (entry, i) => `
+        <div class="ca-history-item ${i === 0 ? 'latest' : ''}">
+          <span class="ca-move">${entry.move || '-'}</span>
+          <span class="ca-score">${entry.score ?? '-'}</span>
+          <span class="ca-rating ${getMoveRating(entry.score).toLowerCase()}">${getMoveRating(entry.score)}</span>
+          <span class="ca-depth">D${entry.depth || '-'}</span>
         </div>
       `
       )
       .join('');
-
-    const evalColor = analysis.evaluation >= 0 ? DEFAULT_THEME.success : '#e74c3c';
-    const evalSign = analysis.evaluation >= 0 ? '+' : '';
-
-    patternElement.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-        <strong>Position Patterns</strong>
-        <span style="color: ${evalColor}; font-weight: bold;">${evalSign}${analysis.evaluation.toFixed(2)}</span>
-      </div>
-      <div style="font-size: 0.9em; color: ${DEFAULT_THEME.textMuted}; margin-bottom: 8px;">${analysis.summary}</div>
-      ${patternsHtml}
-    `;
   }
 
-  /**
-   * Update ML evaluation display
-   */
-  public updateMLEvaluation(evaluation: MLEvaluation): void {
-    const mlElement = document.getElementById('ml-evaluation');
-    if (!mlElement) return;
+  public updateOpeningInfo(info: OpeningInfo): void {
+    const el = document.getElementById('ca-opening');
+    if (!el) return;
 
-    mlElement.style.display = 'block';
-
-    const winPct = (evaluation.winProbability * 100).toFixed(1);
-    const confidencePct = (evaluation.confidence * 100).toFixed(0);
-
-    // Feature bars
-    const featuresHtml = evaluation.featureImportance
-      .slice(0, 4)
-      .map((f) => {
-        const barWidth = Math.min(100, Math.abs(f.impact) * 100);
-        const barColor = f.impact >= 0 ? DEFAULT_THEME.success : '#e74c3c';
-        const direction = f.impact >= 0 ? 'right' : 'left';
-
-        return `
-          <div style="margin: 6px 0;">
-            <div style="display: flex; justify-content: space-between; font-size: 0.85em; margin-bottom: 2px;">
-              <span>${f.name}</span>
-              <span style="color: ${barColor};">${f.impact >= 0 ? '+' : ''}${f.impact.toFixed(3)}</span>
-            </div>
-            <div style="height: 6px; background: ${DEFAULT_THEME.border}; border-radius: 3px; position: relative;">
-              <div style="position: absolute; height: 100%; width: 1px; background: ${DEFAULT_THEME.textMuted}; left: 50%;"></div>
-              <div style="
-                position: absolute;
-                height: 100%;
-                width: ${barWidth / 2}%;
-                background: ${barColor};
-                border-radius: 3px;
-                ${direction === 'right' ? 'left: 50%;' : `right: 50%;`}
-              "></div>
-            </div>
-          </div>
-        `;
-      })
-      .join('');
-
-    // Win probability bar
-    const probBarHtml = `
-      <div style="margin: 12px 0 8px 0;">
-        <div style="display: flex; justify-content: space-between; font-size: 0.9em; margin-bottom: 4px;">
-          <span>Win Probability</span>
-          <span style="font-weight: bold;">${winPct}%</span>
-        </div>
-        <div style="height: 12px; background: #e74c3c; border-radius: 6px; overflow: hidden;">
-          <div style="height: 100%; width: ${winPct}%; background: ${DEFAULT_THEME.success}; transition: width 0.3s;"></div>
-        </div>
-        <div style="display: flex; justify-content: space-between; font-size: 0.75em; color: ${DEFAULT_THEME.textMuted}; margin-top: 2px;">
-          <span>Black</span>
-          <span>White</span>
-        </div>
-      </div>
-    `;
-
-    mlElement.innerHTML = `
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-        <strong>ML Evaluation</strong>
-        <span style="font-size: 0.85em; color: ${DEFAULT_THEME.textMuted};">
-          Confidence: ${confidencePct}%
-        </span>
-      </div>
-      ${probBarHtml}
-      <div style="font-size: 0.9em; font-weight: 500; margin-bottom: 6px;">Feature Importance:</div>
-      ${featuresHtml}
-    `;
-  }
-
-  /**
-   * Update advantage indicator
-   */
-  public updateAdvantage(score: Score | null): void {
-    const bar = document.getElementById('advantage-bar');
-    const marker = document.getElementById('advantage-marker');
-    if (!bar || !marker) return;
-
-    const percentage = scoreToPercentage(score);
-
-    if (percentage > 50) {
-      bar.style.width = `${percentage}%`;
-      bar.style.left = '0';
-    } else {
-      bar.style.width = `${100 - percentage}%`;
-      bar.style.left = `${percentage}%`;
+    if (!info.isInBook && !info.name) {
+      el.style.display = 'none';
+      return;
     }
 
-    marker.style.left = `${percentage}%`;
+    el.style.display = 'block';
+    const eco = info.eco ? `<span class="ca-eco">${info.eco}</span>` : '';
+    const bookMoves = info.bookMoves.length > 0
+      ? `<div class="ca-book-moves">${info.bookMoves.slice(0, 3).map(m =>
+          `<span class="ca-book-move">${m.move} <small>${(m.winRate * 100).toFixed(0)}%</small></span>`
+        ).join('')}</div>`
+      : '';
+
+    el.innerHTML = `
+      <div class="ca-opening-header">${eco}${info.name || 'Unknown'}</div>
+      ${info.description ? `<div class="ca-opening-desc">${info.description}</div>` : ''}
+      ${bookMoves}
+    `;
   }
 
-  /**
-   * Create the main panel element
-   */
+  public updatePatternInfo(analysis: PatternAnalysis): void {
+    const el = document.getElementById('ca-patterns');
+    if (!el) return;
+
+    if (analysis.patterns.length === 0) {
+      el.style.display = 'none';
+      return;
+    }
+
+    el.style.display = 'block';
+    const icons: Record<string, string> = { tactical: '⚔', positional: '◎', structural: '▦' };
+    const colors: Record<string, string> = { critical: '#ef4444', important: '#f59e0b', minor: '#6366f1' };
+
+    el.innerHTML = `
+      <div class="ca-section-header">
+        <span>Patterns</span>
+        <span class="ca-eval ${analysis.evaluation >= 0 ? 'positive' : 'negative'}">
+          ${analysis.evaluation >= 0 ? '+' : ''}${analysis.evaluation.toFixed(2)}
+        </span>
+      </div>
+      <div class="ca-patterns-list">
+        ${analysis.patterns.slice(0, 4).map(p => `
+          <div class="ca-pattern" style="border-left-color: ${colors[p.severity]}">
+            <span class="ca-pattern-icon">${icons[p.category]}</span>
+            <span class="ca-pattern-name">${p.name}</span>
+            ${p.squares?.length ? `<span class="ca-pattern-squares">${p.squares.slice(0, 2).join(',')}</span>` : ''}
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  public updateMLEvaluation(evaluation: MLEvaluation): void {
+    const el = document.getElementById('ca-ml');
+    if (!el) return;
+
+    el.style.display = 'block';
+    const winPct = (evaluation.winProbability * 100).toFixed(0);
+    const confPct = (evaluation.confidence * 100).toFixed(0);
+
+    el.innerHTML = `
+      <div class="ca-section-header">
+        <span>Win Probability</span>
+        <span class="ca-confidence">${confPct}% conf</span>
+      </div>
+      <div class="ca-win-bar">
+        <div class="ca-win-fill" style="width: ${winPct}%"></div>
+        <span class="ca-win-label">${winPct}%</span>
+      </div>
+      <div class="ca-features">
+        ${evaluation.featureImportance.slice(0, 3).map(f => `
+          <div class="ca-feature">
+            <span class="ca-feature-name">${f.name}</span>
+            <div class="ca-feature-bar">
+              <div class="ca-feature-fill ${f.impact >= 0 ? 'positive' : 'negative'}"
+                   style="width: ${Math.min(100, Math.abs(f.impact) * 50)}%"></div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  public updateAdvantage(score: Score | null): void {
+    const bar = document.getElementById('ca-adv-bar');
+    const label = document.getElementById('ca-adv-label');
+    if (!bar || !label) return;
+
+    const pct = scoreToPercentage(score);
+    bar.style.width = `${pct}%`;
+
+    if (score !== null) {
+      const display = score >= 0 ? `+${(score / 100).toFixed(1)}` : (score / 100).toFixed(1);
+      label.textContent = display;
+      label.className = `ca-adv-label ${score >= 0 ? 'positive' : 'negative'}`;
+    }
+  }
+
+  private injectStyles(): void {
+    if (document.getElementById('ca-styles')) return;
+
+    const style = document.createElement('style');
+    style.id = 'ca-styles';
+    style.textContent = `
+      #${PANEL_ID} {
+        position: fixed;
+        right: 16px;
+        top: 16px;
+        width: 320px;
+        background: ${DEFAULT_THEME.background};
+        border-radius: 12px;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.4), 0 0 0 1px ${DEFAULT_THEME.border};
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-size: 13px;
+        color: ${DEFAULT_THEME.text};
+        z-index: 10000;
+        overflow: hidden;
+      }
+      #${PANEL_ID} * { box-sizing: border-box; }
+
+      .ca-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 16px;
+        background: ${DEFAULT_THEME.surface};
+        border-bottom: 1px solid ${DEFAULT_THEME.border};
+      }
+      .ca-logo {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+        font-size: 14px;
+      }
+      .ca-logo-icon {
+        width: 24px;
+        height: 24px;
+        background: linear-gradient(135deg, ${DEFAULT_THEME.primary}, ${DEFAULT_THEME.accent});
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+      }
+      .ca-collapse-btn {
+        width: 28px;
+        height: 28px;
+        border: none;
+        background: transparent;
+        color: ${DEFAULT_THEME.textMuted};
+        cursor: pointer;
+        border-radius: 6px;
+        font-size: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+      }
+      .ca-collapse-btn:hover {
+        background: ${DEFAULT_THEME.border};
+        color: ${DEFAULT_THEME.text};
+      }
+
+      .ca-content {
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .ca-control-btn {
+        width: 100%;
+        padding: 10px 16px;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 13px;
+        cursor: pointer;
+        transition: all 0.2s;
+        background: ${DEFAULT_THEME.primary};
+        color: white;
+      }
+      .ca-control-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+      .ca-control-btn.disabled { opacity: 0.5; cursor: not-allowed; }
+      .ca-control-btn.active { background: ${DEFAULT_THEME.error}; }
+
+      .ca-color-selection {
+        display: none;
+        gap: 12px;
+        justify-content: center;
+        padding: 8px 0;
+      }
+      .ca-color-btn {
+        width: 56px;
+        height: 56px;
+        border: 2px solid ${DEFAULT_THEME.border};
+        border-radius: 12px;
+        cursor: pointer;
+        font-size: 28px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+        background: ${DEFAULT_THEME.surface};
+      }
+      .ca-color-btn:hover {
+        border-color: ${DEFAULT_THEME.primary};
+        transform: scale(1.05);
+      }
+      .ca-color-btn.white { background: #f0f0f0; color: #1a1a1a; }
+      .ca-color-btn.black { background: #1a1a1a; color: #f0f0f0; }
+
+      .ca-secondary-btns {
+        display: none;
+        gap: 8px;
+      }
+      .ca-secondary-btn {
+        flex: 1;
+        padding: 8px;
+        border: 1px solid ${DEFAULT_THEME.border};
+        border-radius: 6px;
+        background: transparent;
+        color: ${DEFAULT_THEME.textMuted};
+        font-size: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .ca-secondary-btn:hover {
+        background: ${DEFAULT_THEME.surface};
+        color: ${DEFAULT_THEME.text};
+        border-color: ${DEFAULT_THEME.primary};
+      }
+      .ca-secondary-btn.active {
+        background: ${DEFAULT_THEME.success};
+        color: white;
+        border-color: ${DEFAULT_THEME.success};
+      }
+
+      .ca-status {
+        padding: 12px;
+        background: ${DEFAULT_THEME.surface};
+        border-radius: 8px;
+        text-align: center;
+        font-weight: 500;
+        color: ${DEFAULT_THEME.accent};
+      }
+
+      .ca-advantage {
+        position: relative;
+        height: 8px;
+        background: ${DEFAULT_THEME.error};
+        border-radius: 4px;
+        overflow: visible;
+      }
+      .ca-adv-bar {
+        height: 100%;
+        background: ${DEFAULT_THEME.success};
+        border-radius: 4px;
+        transition: width 0.3s ease;
+        width: 50%;
+      }
+      .ca-adv-label {
+        position: absolute;
+        top: -20px;
+        right: 0;
+        font-size: 11px;
+        font-weight: 600;
+      }
+      .ca-adv-label.positive { color: ${DEFAULT_THEME.success}; }
+      .ca-adv-label.negative { color: ${DEFAULT_THEME.error}; }
+
+      .ca-section {
+        display: none;
+        background: ${DEFAULT_THEME.surface};
+        border-radius: 8px;
+        padding: 10px 12px;
+      }
+      .ca-section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-weight: 600;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: ${DEFAULT_THEME.textMuted};
+        margin-bottom: 8px;
+      }
+
+      .ca-opening-header { font-weight: 600; color: ${DEFAULT_THEME.text}; }
+      .ca-eco {
+        display: inline-block;
+        background: ${DEFAULT_THEME.primary};
+        color: white;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 10px;
+        margin-right: 6px;
+      }
+      .ca-opening-desc { font-size: 11px; color: ${DEFAULT_THEME.textMuted}; margin-top: 4px; }
+      .ca-book-moves { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+      .ca-book-move {
+        background: ${DEFAULT_THEME.background};
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+      }
+      .ca-book-move small { color: ${DEFAULT_THEME.success}; margin-left: 4px; }
+
+      .ca-patterns-list { display: flex; flex-direction: column; gap: 4px; }
+      .ca-pattern {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 8px;
+        background: ${DEFAULT_THEME.background};
+        border-radius: 4px;
+        border-left: 3px solid;
+        font-size: 12px;
+      }
+      .ca-pattern-icon { opacity: 0.7; }
+      .ca-pattern-name { flex: 1; }
+      .ca-pattern-squares { color: ${DEFAULT_THEME.textMuted}; font-size: 10px; }
+      .ca-eval { font-weight: 600; font-size: 12px; }
+      .ca-eval.positive { color: ${DEFAULT_THEME.success}; }
+      .ca-eval.negative { color: ${DEFAULT_THEME.error}; }
+
+      .ca-win-bar {
+        position: relative;
+        height: 24px;
+        background: ${DEFAULT_THEME.error};
+        border-radius: 6px;
+        overflow: hidden;
+      }
+      .ca-win-fill {
+        height: 100%;
+        background: ${DEFAULT_THEME.success};
+        transition: width 0.3s;
+      }
+      .ca-win-label {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-weight: 700;
+        color: white;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+      }
+      .ca-confidence { font-size: 10px; color: ${DEFAULT_THEME.textMuted}; }
+      .ca-features { margin-top: 8px; display: flex; flex-direction: column; gap: 4px; }
+      .ca-feature { display: flex; align-items: center; gap: 8px; font-size: 11px; }
+      .ca-feature-name { width: 80px; color: ${DEFAULT_THEME.textMuted}; }
+      .ca-feature-bar {
+        flex: 1;
+        height: 4px;
+        background: ${DEFAULT_THEME.background};
+        border-radius: 2px;
+        overflow: hidden;
+      }
+      .ca-feature-fill { height: 100%; border-radius: 2px; }
+      .ca-feature-fill.positive { background: ${DEFAULT_THEME.success}; }
+      .ca-feature-fill.negative { background: ${DEFAULT_THEME.error}; }
+
+      .ca-history { max-height: 140px; overflow-y: auto; }
+      .ca-history-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 0;
+        border-bottom: 1px solid ${DEFAULT_THEME.border};
+        opacity: 0.6;
+      }
+      .ca-history-item.latest { opacity: 1; }
+      .ca-history-item:last-child { border-bottom: none; }
+      .ca-move { font-weight: 600; font-family: monospace; min-width: 50px; }
+      .ca-score { color: ${DEFAULT_THEME.textMuted}; min-width: 40px; }
+      .ca-rating {
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 10px;
+        font-weight: 600;
+      }
+      .ca-rating.excellent { background: ${DEFAULT_THEME.success}; color: white; }
+      .ca-rating.good { background: #22d3ee; color: #0f172a; }
+      .ca-rating.ok { background: ${DEFAULT_THEME.warning}; color: #0f172a; }
+      .ca-rating.poor { background: ${DEFAULT_THEME.error}; color: white; }
+      .ca-depth { color: ${DEFAULT_THEME.textMuted}; font-size: 11px; margin-left: auto; }
+      .ca-empty { text-align: center; color: ${DEFAULT_THEME.textMuted}; padding: 12px; }
+    `;
+    document.head.appendChild(style);
+  }
+
   private createPanel(): HTMLElement {
-    const panel = createElement('div', {
-      position: 'fixed',
-      right: '20px',
-      top: '20px',
-      width: '400px',
-      background: DEFAULT_THEME.background,
-      borderRadius: '8px',
-      boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-      padding: '20px',
-      fontFamily: "'Segoe UI', system-ui, sans-serif",
-      zIndex: '1000',
-      transition: 'all 0.3s ease',
-    });
+    const panel = createElement('div', {});
     panel.id = PANEL_ID;
 
-    panel.appendChild(this.createHeader());
-    panel.appendChild(this.createContent());
+    panel.innerHTML = `
+      <div class="ca-header">
+        <div class="ca-logo">
+          <div class="ca-logo-icon">♔</div>
+          <span>Chess AI</span>
+        </div>
+        <button class="ca-collapse-btn" id="ca-collapse">−</button>
+      </div>
+      <div class="ca-content" id="ca-content">
+        <button class="ca-control-btn" id="ca-control-btn">Start</button>
 
+        <div class="ca-color-selection" id="ca-color-selection">
+          <button class="ca-color-btn white" data-color="w">♔</button>
+          <button class="ca-color-btn black" data-color="b">♚</button>
+        </div>
+
+        <div class="ca-secondary-btns" id="ca-secondary-btns">
+          <button class="ca-secondary-btn" id="ca-autoplay-btn">Auto Play</button>
+          <button class="ca-secondary-btn" id="ca-change-color-btn">Change Color</button>
+        </div>
+
+        <div class="ca-status" id="ca-status">Click Start to begin</div>
+
+        <div class="ca-advantage">
+          <div class="ca-adv-bar" id="ca-adv-bar"></div>
+          <span class="ca-adv-label" id="ca-adv-label">0.0</span>
+        </div>
+
+        <div class="ca-section" id="ca-opening"></div>
+        <div class="ca-section" id="ca-patterns"></div>
+        <div class="ca-section" id="ca-ml"></div>
+
+        <div class="ca-section" id="ca-history-section" style="display: block;">
+          <div class="ca-section-header">Analysis History</div>
+          <div class="ca-history" id="ca-history">
+            <div class="ca-empty">No analysis yet</div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    this.attachEventListeners(panel);
     return panel;
   }
 
-  /**
-   * Create header section
-   */
-  private createHeader(): HTMLElement {
-    const header = createElement('div', {
-      display: 'flex',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: '20px',
-      paddingBottom: '15px',
-      borderBottom: `1px solid ${DEFAULT_THEME.border}`,
-      position: 'relative',
+  private attachEventListeners(panel: HTMLElement): void {
+    // Collapse button
+    panel.querySelector('#ca-collapse')?.addEventListener('click', () => {
+      this.isCollapsed = !this.isCollapsed;
+      const content = panel.querySelector('#ca-content') as HTMLElement;
+      const btn = panel.querySelector('#ca-collapse') as HTMLElement;
+      if (content) content.style.display = this.isCollapsed ? 'none' : 'flex';
+      if (btn) btn.textContent = this.isCollapsed ? '+' : '−';
     });
-
-    // Title
-    const title = createElement('h3', {
-      margin: '0',
-      color: DEFAULT_THEME.primary,
-      fontSize: '1.4em',
-    });
-    title.textContent = 'AI Chess Assistant';
 
     // Control button
-    const controlButton = this.createButton('Activate', () => {
+    panel.querySelector('#ca-control-btn')?.addEventListener('click', () => {
       this.callbacks.onActivate();
     });
-    controlButton.id = 'assistant-control-button';
 
-    // Collapse button
-    const collapseButton = this.createCollapseButton();
-
-    header.appendChild(title);
-    header.appendChild(controlButton);
-    header.appendChild(collapseButton);
-
-    return header;
-  }
-
-  /**
-   * Create content section
-   */
-  private createContent(): HTMLElement {
-    const content = createElement('div', {
-      transition: 'all 0.3s ease',
-    });
-    content.id = 'assistant-content';
-
-    content.appendChild(this.createColorSelection());
-    content.appendChild(this.createOpeningInfoDisplay());
-    content.appendChild(this.createPatternDisplay());
-    content.appendChild(this.createMLEvaluationDisplay());
-    content.appendChild(this.createAdvantageIndicator());
-    content.appendChild(this.createStatusDisplay());
-    content.appendChild(this.createAutoPlayButton());
-    content.appendChild(this.createHistoryPanel());
-    content.appendChild(this.createChangeColorButton());
-
-    return content;
-  }
-
-  /**
-   * Create color selection buttons
-   */
-  private createColorSelection(): HTMLElement {
-    const container = createElement('div', {
-      display: 'none',
-      gap: '15px',
-      margin: '20px 0',
-      justifyContent: 'center',
-    });
-    container.id = 'color-choice-container';
-
-    const whiteButton = this.createColorButton('&#9812;', 'w');
-    const blackButton = this.createColorButton('&#9818;', 'b');
-
-    container.appendChild(whiteButton);
-    container.appendChild(blackButton);
-
-    return container;
-  }
-
-  /**
-   * Create color selection button
-   */
-  private createColorButton(symbol: string, color: PlayerColor): HTMLElement {
-    const isWhite = color === 'w';
-    const button = createElement('button', {
-      background: isWhite ? '#ecf0f1' : DEFAULT_THEME.primary,
-      color: isWhite ? DEFAULT_THEME.primary : 'white',
-      border: `2px solid ${isWhite ? '#bdc3c7' : DEFAULT_THEME.secondary}`,
-      padding: '15px',
-      borderRadius: '4px',
-      cursor: 'pointer',
-      fontSize: '2em',
-      width: '70px',
-      height: '70px',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      transition: 'all 0.2s',
+    // Color selection
+    panel.querySelectorAll('.ca-color-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const color = (btn as HTMLElement).dataset.color as PlayerColor;
+        this.callbacks.onColorSelect(color);
+      });
     });
 
-    button.innerHTML = symbol;
-    button.onmouseover = (): void => {
-      button.style.transform = 'scale(1.05)';
-    };
-    button.onmouseout = (): void => {
-      button.style.transform = 'scale(1)';
-    };
-    button.onclick = (): void => {
-      this.callbacks.onColorSelect(color);
-    };
-
-    return button;
-  }
-
-  /**
-   * Create opening info display
-   */
-  private createOpeningInfoDisplay(): HTMLElement {
-    const container = createElement('div', {
-      display: 'none',
-      margin: '10px 0',
-      padding: '12px',
-      background: `linear-gradient(135deg, ${DEFAULT_THEME.surface} 0%, #e8f4f8 100%)`,
-      borderRadius: '6px',
-      borderLeft: `4px solid ${DEFAULT_THEME.accent}`,
-    });
-    container.id = 'opening-info';
-
-    return container;
-  }
-
-  /**
-   * Create pattern analysis display
-   */
-  private createPatternDisplay(): HTMLElement {
-    const container = createElement('div', {
-      display: 'none',
-      margin: '10px 0',
-      padding: '12px',
-      background: DEFAULT_THEME.surface,
-      borderRadius: '6px',
-      border: `1px solid ${DEFAULT_THEME.border}`,
-    });
-    container.id = 'pattern-info';
-
-    return container;
-  }
-
-  /**
-   * Create ML evaluation display
-   */
-  private createMLEvaluationDisplay(): HTMLElement {
-    const container = createElement('div', {
-      display: 'none',
-      margin: '10px 0',
-      padding: '12px',
-      background: `linear-gradient(135deg, ${DEFAULT_THEME.surface} 0%, #f0f5ff 100%)`,
-      borderRadius: '6px',
-      border: `1px solid ${DEFAULT_THEME.accent}`,
-    });
-    container.id = 'ml-evaluation';
-
-    return container;
-  }
-
-  /**
-   * Create advantage indicator
-   */
-  private createAdvantageIndicator(): HTMLElement {
-    const container = createElement('div', {
-      height: '20px',
-      background: DEFAULT_THEME.primary,
-      border: '2px solid #ffffff',
-      borderRadius: '10px',
-      margin: '15px 0',
-      position: 'relative',
-      overflow: 'hidden',
-      boxShadow: `0 0 0 2px ${DEFAULT_THEME.primary}`,
-    });
-    container.id = 'advantage-indicator';
-
-    const bar = createElement('div', {
-      position: 'absolute',
-      height: '100%',
-      width: '50%',
-      background: '#ffffff',
-      left: '0',
-      transition: 'width 0.3s ease, left 0.3s ease',
-      borderRadius: '8px',
-    });
-    bar.id = 'advantage-bar';
-
-    const marker = createElement('div', {
-      position: 'absolute',
-      width: '4px',
-      height: '100%',
-      background: DEFAULT_THEME.accent,
-      left: '50%',
-      transform: 'translateX(-50%)',
-      transition: 'left 0.3s ease',
-    });
-    marker.id = 'advantage-marker';
-
-    container.appendChild(bar);
-    container.appendChild(marker);
-
-    return container;
-  }
-
-  /**
-   * Create status display
-   */
-  private createStatusDisplay(): HTMLElement {
-    const status = createElement('div', {
-      margin: '15px 0',
-      padding: '15px',
-      background: DEFAULT_THEME.surface,
-      borderRadius: '4px',
-      fontSize: '1.1em',
-      color: DEFAULT_THEME.text,
-    });
-    status.id = 'assistant-status';
-
-    return status;
-  }
-
-  /**
-   * Create auto-play button
-   */
-  private createAutoPlayButton(): HTMLElement {
-    const button = this.createButton('Auto Play', () => {
+    // Auto play button
+    panel.querySelector('#ca-autoplay-btn')?.addEventListener('click', () => {
       this.isAutoPlayActive = !this.isAutoPlayActive;
-      if (this.isAutoPlayActive) {
-        button.style.background = DEFAULT_THEME.success;
-        button.textContent = 'Stop Auto Play';
-      } else {
-        button.style.background = DEFAULT_THEME.primary;
-        button.textContent = 'Auto Play';
+      const btn = panel.querySelector('#ca-autoplay-btn') as HTMLElement;
+      if (btn) {
+        btn.classList.toggle('active', this.isAutoPlayActive);
+        btn.textContent = this.isAutoPlayActive ? 'Stop Auto' : 'Auto Play';
       }
       this.callbacks.onAutoPlayToggle(this.isAutoPlayActive);
     });
-    button.id = 'auto-play-button';
-    button.style.display = 'none';
-    button.style.marginTop = '15px';
 
-    return button;
-  }
-
-  /**
-   * Create history panel
-   */
-  private createHistoryPanel(): HTMLElement {
-    const history = createElement('div', {
-      maxHeight: '300px',
-      overflowY: 'auto',
-      marginTop: '20px',
-      padding: '15px',
-      background: DEFAULT_THEME.surface,
-      borderRadius: '4px',
-      fontSize: '1.1em',
-    });
-    history.id = 'analysis-history';
-
-    return history;
-  }
-
-  /**
-   * Create change color button
-   */
-  private createChangeColorButton(): HTMLElement {
-    const button = this.createButton('Change Color', () => {
+    // Change color button
+    panel.querySelector('#ca-change-color-btn')?.addEventListener('click', () => {
       this.callbacks.onDeactivate();
       this.showColorSelection();
     });
-    button.id = 'change-color-button';
-    button.style.display = 'none';
-    button.style.marginTop = '15px';
-    button.style.background = '#3498db';
-
-    return button;
-  }
-
-  /**
-   * Create collapse button
-   */
-  private createCollapseButton(): HTMLElement {
-    const button = createElement('button', {
-      background: DEFAULT_THEME.primary,
-      color: 'white',
-      border: 'none',
-      width: '30px',
-      height: '30px',
-      borderRadius: '50%',
-      cursor: 'pointer',
-      fontSize: '1.5em',
-      lineHeight: '1',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      transition: 'all 0.2s',
-      position: 'absolute',
-      left: '50%',
-      top: '15px',
-      transform: 'translateX(-50%)',
-      zIndex: '2',
-    });
-    button.id = 'collapse-button';
-    button.textContent = '−';
-
-    button.onclick = (): void => {
-      this.isCollapsed = !this.isCollapsed;
-      button.textContent = this.isCollapsed ? '+' : '−';
-
-      const content = document.getElementById('assistant-content');
-      if (content && this.panel) {
-        content.style.display = this.isCollapsed ? 'none' : 'block';
-        this.panel.style.height = this.isCollapsed ? '100px' : 'auto';
-      }
-    };
-
-    return button;
-  }
-
-  /**
-   * Create a styled button
-   */
-  private createButton(text: string, onClick: () => void): HTMLButtonElement {
-    const button = document.createElement('button');
-    Object.assign(button.style, {
-      background: DEFAULT_THEME.primary,
-      color: 'white',
-      border: 'none',
-      padding: '10px 20px',
-      borderRadius: '4px',
-      cursor: 'pointer',
-      fontSize: '1.1em',
-      transition: 'background 0.2s',
-    });
-
-    button.textContent = text;
-    button.onmouseover = (): void => {
-      button.style.background = DEFAULT_THEME.secondary;
-    };
-    button.onmouseout = (): void => {
-      button.style.background = DEFAULT_THEME.primary;
-    };
-    button.onclick = onClick;
-
-    return button;
   }
 }
