@@ -356,7 +356,7 @@ export class PatternService {
     // This is a simplified check - full implementation would need attack/defense maps
 
     const whitePieces = pieces.filter((p) => p.piece === p.piece.toUpperCase() && p.piece !== 'P' && p.piece !== 'K');
-    const blackPieces = pieces.filter((p) => p.piece === p.piece.toLowerCase() && p.piece !== 'p' && p.piece !== 'k');
+    const _blackPieces = pieces.filter((p) => p.piece === p.piece.toLowerCase() && p.piece !== 'p' && p.piece !== 'k');
 
     // Check for pieces that might be undefended (simplified)
     for (const piece of whitePieces) {
