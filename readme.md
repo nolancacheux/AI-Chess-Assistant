@@ -1,86 +1,237 @@
 <div align="center">
-  <img src="ressources/icon.png" alt="Chess Cheat Assistant Icon" width="200" />
-  <h1>Chess Cheat Assistant <br></h1>
-  <p><b>nolancacheux/chess-cheat-assistant</b></p>
-  <p><i>Chess Assistant for chess.com</i></p>
+  <img src="ressources/icon.png" alt="AI Chess Assistant" width="120" />
+  <h1>AI Chess Assistant</h1>
+  <p><strong>Chrome Extension for Real-Time Chess Position Analysis</strong></p>
+
+  <p>
+    <a href="#features">Features</a> •
+    <a href="#architecture">Architecture</a> •
+    <a href="#tech-stack">Tech Stack</a> •
+    <a href="#getting-started">Getting Started</a> •
+    <a href="#project-structure">Project Structure</a>
+  </p>
+
+  <p>
+    <img src="https://img.shields.io/badge/TypeScript-5.4-blue?logo=typescript" alt="TypeScript" />
+    <img src="https://img.shields.io/badge/Vite-5.2-purple?logo=vite" alt="Vite" />
+    <img src="https://img.shields.io/badge/Chrome%20Extension-Manifest%20V3-green?logo=googlechrome" alt="Chrome Extension" />
+    <img src="https://github.com/nolancacheux/AI-Chess-Assistant/actions/workflows/ci.yml/badge.svg" alt="CI Status" />
+  </p>
 </div>
 
 ---
+
 <div align="center">
-  <img src="ressources/ChessCheatAssistant.gif" width="700" alt="Chess Cheat Assistant Demo" />
+  <img src="ressources/ChessCheatAssistant.gif" width="700" alt="AI Chess Assistant Demo" />
 </div>
----
-
-## Getting Started
-
-1. <b>Clone the repository:</b>
-   ```bash
-   git clone https://github.com/nolancacheux/chess-cheat-assistant.git
-   ```
-2. <b>Load the extension in Chrome:</b>
-   - Go to <code>chrome://extensions/</code>
-   - Enable <b>Developer Mode</b>
-   - Click <b>Load Unpacked</b> and select the project folder you cloned. (e.g., `chess-cheat-assistant`)
-3. <b>Go to chess.com and start a game.</b>
-4. <b>Activate the assistant.</b>
 
 ---
+
+## Overview
+
+AI Chess Assistant is a Chrome extension that demonstrates **real-time chess engine integration** with web-based chess platforms. The extension leverages the **Stockfish chess engine** to analyze board positions, evaluate moves, and provide intelligent suggestions.
+
+This project showcases:
+- **Real-time position analysis** using WebWorker-based engine communication
+- **DOM manipulation** for board state extraction and move visualization
+- **Event-driven architecture** with TypeScript for type-safe development
+- **Modern build tooling** with Vite and automated CI/CD
 
 ## Features
 
-### Real-Time Move Analysis
+### Real-Time Position Analysis
+The extension continuously monitors the chess board, extracts the current position in FEN notation, and sends it to the Stockfish engine for deep analysis.
+
 <div align="center">
-  <img src="ressources/real-time-suggestion.png" alt="Real-Time Suggestion" width="400" />
+  <img src="ressources/real-time-suggestion.png" alt="Real-Time Analysis" width="400" />
 </div>
-As soon as you activate the assistant, it connects to the chess.com board and uses a built-in Stockfish engine to analyze the current position. You’ll see the best move, evaluation score, and analysis depth update live as the game progresses.
+
+### Move Evaluation & Scoring
+Each analyzed position receives a centipawn score indicating the advantage/disadvantage, along with the principal variation (best line of play).
+
+### Visual Move Suggestions
+Suggested moves are highlighted directly on the board with animated visual indicators, making it easy to identify optimal plays.
+
+<div align="center">
+  <img src="ressources/full-board.png" alt="Board Analysis" width="400" />
+</div>
 
 ### Advantage Tracking
-<div align="center">
-  <img src="ressources/full-board.png" alt="Full Board Analysis" width="400" />
-</div>
-A dynamic advantage bar that visually represents which side is ahead, based on the engine’s evaluation.
+A dynamic progress bar visualizes the current position evaluation, providing instant feedback on game state.
 
-### Color Selection & Board Orientation
+### Color Selection
+Choose to analyze from White or Black's perspective, with the engine adapting its evaluation accordingly.
+
 <div align="center">
   <img src="ressources/color-choose.png" alt="Color Selection" width="400" />
 </div>
-You can choose to play as White or Black, and the assistant adapts its analysis and move suggestions accordingly. Can be useful for players who want to practice against the engine or analyze their own games.
 
-### Level Maximum defeated (3200 Elos) 
+## Architecture
+
+The extension follows a **modular, service-oriented architecture**:
+
+```
+src/
+├── types/          # TypeScript interfaces and type definitions
+│   ├── chess.types.ts      # Chess-related types (FEN, moves, scores)
+│   ├── engine.types.ts     # Engine communication types
+│   └── ui.types.ts         # UI component types
+├── services/       # Core services with single responsibilities
+│   ├── board.service.ts    # Board state extraction & FEN generation
+│   └── engine.service.ts   # Stockfish WebWorker communication
+├── components/     # UI components
+│   ├── panel.component.ts  # Main control panel
+│   └── highlights.component.ts  # Move highlighting
+├── core/           # Business logic
+│   ├── analysis.manager.ts # Analysis history & state management
+│   └── autoplay.manager.ts # Automated move execution
+├── utils/          # Utility functions
+│   ├── chess.utils.ts      # Chess-specific helpers
+│   └── dom.utils.ts        # DOM manipulation utilities
+└── content/        # Entry point
+    ├── index.ts            # Content script initialization
+    └── assistant.ts        # Main orchestrator class
+```
+
+### Key Design Patterns
+
+- **Service Pattern**: Encapsulated services for board interaction and engine communication
+- **Observer Pattern**: Event-based engine updates with subscription model
+- **Singleton Pattern**: Single instance services for consistent state management
+- **Facade Pattern**: ChessAssistant class orchestrates all subsystems
+
+## Tech Stack
+
+| Technology | Purpose |
+|------------|---------|
+| **TypeScript 5.4** | Type-safe development with strict mode |
+| **Vite 5.2** | Fast builds with HMR and optimized bundling |
+| **CRXJS** | Chrome extension development with Vite |
+| **ESLint** | Code quality and consistency |
+| **Prettier** | Code formatting |
+| **GitHub Actions** | CI/CD pipeline (lint, type-check, build) |
+| **Stockfish** | Chess engine for position analysis |
+
+## Getting Started
+
+### Prerequisites
+- Node.js 18+
+- Chrome browser
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/nolancacheux/AI-Chess-Assistant.git
+   cd AI-Chess-Assistant
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Build the extension**
+   ```bash
+   npm run build
+   ```
+
+4. **Load in Chrome**
+   - Navigate to `chrome://extensions/`
+   - Enable **Developer Mode**
+   - Click **Load Unpacked**
+   - Select the `dist/` folder
+
+5. **Use the extension**
+   - Go to [chess.com](https://chess.com)
+   - Start a game
+   - The assistant panel will appear automatically
+
+### Development
+
+```bash
+# Start development mode with watch
+npm run dev
+
+# Run linting
+npm run lint
+
+# Run type checking
+npm run type-check
+
+# Format code
+npm run format
+```
+
+## Project Structure
+
+```
+AI-Chess-Assistant/
+├── .github/
+│   └── workflows/
+│       └── ci.yml          # GitHub Actions CI pipeline
+├── assets/                  # Extension icons
+├── ressources/              # Documentation images
+├── src/                     # Source code (TypeScript)
+├── dist/                    # Built extension (generated)
+├── manifest.json            # Chrome extension manifest
+├── package.json             # Dependencies and scripts
+├── tsconfig.json            # TypeScript configuration
+├── vite.config.ts           # Vite build configuration
+├── .eslintrc.cjs            # ESLint configuration
+└── .prettierrc              # Prettier configuration
+```
+
+## Technical Highlights
+
+### FEN Generation
+The board service extracts piece positions from the DOM and generates standard FEN notation for engine analysis:
+
+```typescript
+public generateFEN(): FENString {
+  // Iterates through board squares
+  // Maps CSS classes to piece symbols
+  // Returns standard FEN string
+}
+```
+
+### Engine Communication
+Asynchronous communication with Stockfish via WebWorker:
+
+```typescript
+public analyze(fen: FENString, depth?: Depth): void {
+  this.worker.postMessage(`position fen ${fen}`);
+  this.worker.postMessage(`go depth ${depth}`);
+}
+```
+
+### Event-Driven Updates
+Subscribers receive real-time analysis updates:
+
+```typescript
+engine.subscribe((event: EngineEvent) => {
+  if (event.type === 'bestmove') {
+    // Handle best move found
+  }
+});
+```
+
+## Educational Purpose
+
+This extension is designed for **educational and research purposes**. It demonstrates:
+- Chess engine integration techniques
+- Browser extension architecture
+- Real-time DOM manipulation
+- WebWorker communication patterns
+
+**Important**: Do not use this tool to gain unfair advantages in online games.
+
+## License
+
+MIT License - See [LICENSE](LICENSE) for details.
+
+---
+
 <div align="center">
-  <img src="ressources/maximum-level-win.png" alt="Advantage Tracking" width="400" />
+  <p>Built by <a href="https://github.com/nolancacheux">Nolan Cacheux</a></p>
 </div>
-The assistant has won against the maximum level of chess.com, which is 3200 Elos.
-
----
-
-## Educational Purpose 
-
-This extension is designed for <b>educational and research purposes only</b>. It helps you understand how chess engines and browser-based chess assistants work, so you can learn about move analysis, position evaluation, and the technology behind chess improvement tools. <b>Do not use this tool to cheat in online games</b>—it is meant to foster learning, awareness, and fair play. Using such tools during live games is against the rules of chess platforms and can result in bans. Please use responsibly!
-
----
-
-## What is Chess Cheat Assistant?
-
-Chess Cheat Assistant is a powerful, interactive browser extension for chess.com that demonstrates how a chess engine can analyze positions, suggest moves, and even automate play. It’s a hands-on way to explore:
-- How Stockfish and other chess engines evaluate positions
-- How browser extensions can interact with chess boards
-- The difference between human and computer move selection
-- The technical side of chess automation and move visualization
-
----
-
-## How Does It Work? (Technical Overview)
-- <b>Board State Extraction:</b> The extension reads the chess.com board and generates a FEN string for the current position.
-- <b>Stockfish Integration:</b> A web worker runs Stockfish in the background, analyzing the position at configurable depth.
-- <b>Move Highlighting:</b> The assistant overlays custom HTML/CSS highlights on the board, using animation for visibility.
-- <b>Auto-Play:</b> The assistant simulates mouse events to move pieces, demonstrating browser automation techniques.
-- <b>Analysis History:</b> All engine outputs are logged and displayed in a sortable, filterable table.
-- <b>Advantage Bar:</b> The evaluation is mapped to a visual bar for instant feedback.
-
----
-
-## Repository & License
-- <b>Repository:</b> https://github.com/nolancacheux/chess-cheat-assistant
-- <b>License:</b> MIT
-- <b>Author:</b> Nolan Cacheux
