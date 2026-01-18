@@ -60,12 +60,12 @@ export class EngineService {
       }
 
       const workerUrl = chrome.runtime.getURL(this.config.workerPath);
+      const wasmUrl = chrome.runtime.getURL('engine/stockfish.wasm');
       console.log('[EngineService] Loading bundled engine from:', workerUrl);
 
-      // Fetch the worker script and create a blob URL
-      // This bypasses MV3 content script worker restrictions
+      // Fetch the worker script
       const xhr = new XMLHttpRequest();
-      xhr.open('GET', workerUrl, false); // Synchronous for simplicity
+      xhr.open('GET', workerUrl, false);
       xhr.send();
 
       if (xhr.status !== 200) {
@@ -73,7 +73,21 @@ export class EngineService {
         return false;
       }
 
-      const blob = new Blob([xhr.responseText], { type: 'application/javascript' });
+      // Patch the script to use the correct WASM URL
+      let scriptContent = xhr.responseText;
+
+      // Replace relative WASM path references with absolute extension URL
+      scriptContent = `var wasmBinaryFile = "${wasmUrl}";\n` + scriptContent;
+      scriptContent = scriptContent.replace(
+        /wasmBinaryFile\s*=\s*["'][^"']*stockfish\.wasm["']/g,
+        `wasmBinaryFile = "${wasmUrl}"`
+      );
+      scriptContent = scriptContent.replace(
+        /locateFile\s*\([^)]*\)/g,
+        `((path) => path.endsWith('.wasm') ? "${wasmUrl}" : path)`
+      );
+
+      const blob = new Blob([scriptContent], { type: 'application/javascript' });
       const blobUrl = URL.createObjectURL(blob);
 
       this.worker = new Worker(blobUrl);
