@@ -355,8 +355,9 @@ export class PanelComponent {
         font-size: 12px;
       }
 
-      .ca-collapsed .ca-body { display: none; }
-      .ca-collapsed .ca-header { display: none; }
+      #${PANEL_ID}.ca-collapsed { width: auto !important; box-shadow: none !important; background: transparent !important; border-radius: 4px; }
+      #${PANEL_ID}.ca-collapsed .ca-body { display: none; }
+      #${PANEL_ID}.ca-collapsed .ca-header { display: none; }
 
       .ca-mini {
         display: none;
@@ -376,8 +377,7 @@ export class PanelComponent {
       }
       .ca-mini:hover { opacity: 0.8; }
       .ca-mini:active { cursor: grabbing; }
-      .ca-collapsed .ca-mini { display: flex; }
-      .ca-collapsed { width: auto; box-shadow: none; background: transparent; }
+      #${PANEL_ID}.ca-collapsed .ca-mini { display: flex; }
     `;
     document.head.appendChild(style);
   }
