@@ -73,21 +73,20 @@ export class EngineService {
         return false;
       }
 
-      // Patch the script to use the correct WASM URL
-      let scriptContent = xhr.responseText;
+      // Create wrapper that sets up Module.locateFile before loading stockfish
+      const wrapper = `
+        var Module = {
+          locateFile: function(path) {
+            if (path.endsWith('.wasm')) {
+              return "${wasmUrl}";
+            }
+            return path;
+          }
+        };
+        ${xhr.responseText}
+      `;
 
-      // Replace relative WASM path references with absolute extension URL
-      scriptContent = `var wasmBinaryFile = "${wasmUrl}";\n` + scriptContent;
-      scriptContent = scriptContent.replace(
-        /wasmBinaryFile\s*=\s*["'][^"']*stockfish\.wasm["']/g,
-        `wasmBinaryFile = "${wasmUrl}"`
-      );
-      scriptContent = scriptContent.replace(
-        /locateFile\s*\([^)]*\)/g,
-        `((path) => path.endsWith('.wasm') ? "${wasmUrl}" : path)`
-      );
-
-      const blob = new Blob([scriptContent], { type: 'application/javascript' });
+      const blob = new Blob([wrapper], { type: 'application/javascript' });
       const blobUrl = URL.createObjectURL(blob);
 
       this.worker = new Worker(blobUrl);
