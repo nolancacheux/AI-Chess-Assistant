@@ -20,7 +20,7 @@ export class BoardService {
    * Find and cache the chess board element
    */
   public findBoard(): boolean {
-    this.boardElement = document.querySelector('wc-chess-board') as ChessBoardElement | null;
+    this.boardElement = document.querySelector('wc-chess-board');
     return this.boardElement !== null;
   }
 

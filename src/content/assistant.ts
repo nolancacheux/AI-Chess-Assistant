@@ -2,11 +2,11 @@
  * Chess Assistant - Main controller class
  */
 
-import type { AnalysisEntry, EngineEvent, PlayerColor } from '@/types';
-import { DEFAULT_ENGINE_CONFIG } from '@/types';
 import { PanelComponent, clearHighlights, displayMoveHighlight } from '@/components';
 import { AnalysisManager, AutoPlayManager } from '@/core';
 import { EngineService, boardService } from '@/services';
+import { DEFAULT_ENGINE_CONFIG } from '@/types';
+import type { AnalysisEntry, EngineEvent, PlayerColor } from '@/types';
 
 const POLLING_INTERVAL = 500;
 

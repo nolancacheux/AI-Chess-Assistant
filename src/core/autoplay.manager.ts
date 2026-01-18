@@ -2,10 +2,10 @@
  * AutoPlay Manager - Handles automatic move execution
  */
 
-import type { PlayerColor, UCIMove } from '@/types';
-import { boardService } from '@/services';
-import { dispatchClickSequence } from '@/utils/dom.utils';
 import { showClickIndicator } from '@/components/highlights.component';
+import { boardService } from '@/services';
+import type { PlayerColor, UCIMove } from '@/types';
+import { dispatchClickSequence } from '@/utils/dom.utils';
 
 const FILE_MAP: Record<string, number> = {
   a: 0,

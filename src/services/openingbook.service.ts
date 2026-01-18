@@ -3,7 +3,6 @@
  * Provides opening book lookups and suggestions
  */
 
-import type { UCIMove } from '@/types';
 import {
   type Opening,
   type OpeningMove,
@@ -13,6 +12,7 @@ import {
   getOpeningName,
   isInOpeningBook,
 } from '@/data/openings.data';
+import type { UCIMove } from '@/types';
 
 export interface OpeningInfo {
   name: string | null;
