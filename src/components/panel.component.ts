@@ -3,6 +3,7 @@
  */
 
 import type { AnalysisEntry, ColorSelectionCallback, PlayerColor, Score } from '@/types';
+import type { MLEvaluation } from '@/services/evaluation.service';
 import type { OpeningInfo } from '@/services/openingbook.service';
 import type { PatternAnalysis } from '@/services/patterns.service';
 import { DEFAULT_THEME } from '@/types';
@@ -249,6 +250,78 @@ export class PanelComponent {
   }
 
   /**
+   * Update ML evaluation display
+   */
+  public updateMLEvaluation(evaluation: MLEvaluation): void {
+    const mlElement = document.getElementById('ml-evaluation');
+    if (!mlElement) return;
+
+    mlElement.style.display = 'block';
+
+    const winPct = (evaluation.winProbability * 100).toFixed(1);
+    const confidencePct = (evaluation.confidence * 100).toFixed(0);
+
+    // Feature bars
+    const featuresHtml = evaluation.featureImportance
+      .slice(0, 4)
+      .map((f) => {
+        const barWidth = Math.min(100, Math.abs(f.impact) * 100);
+        const barColor = f.impact >= 0 ? DEFAULT_THEME.success : '#e74c3c';
+        const direction = f.impact >= 0 ? 'right' : 'left';
+
+        return `
+          <div style="margin: 6px 0;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.85em; margin-bottom: 2px;">
+              <span>${f.name}</span>
+              <span style="color: ${barColor};">${f.impact >= 0 ? '+' : ''}${f.impact.toFixed(3)}</span>
+            </div>
+            <div style="height: 6px; background: ${DEFAULT_THEME.border}; border-radius: 3px; position: relative;">
+              <div style="position: absolute; height: 100%; width: 1px; background: ${DEFAULT_THEME.textMuted}; left: 50%;"></div>
+              <div style="
+                position: absolute;
+                height: 100%;
+                width: ${barWidth / 2}%;
+                background: ${barColor};
+                border-radius: 3px;
+                ${direction === 'right' ? 'left: 50%;' : `right: 50%;`}
+              "></div>
+            </div>
+          </div>
+        `;
+      })
+      .join('');
+
+    // Win probability bar
+    const probBarHtml = `
+      <div style="margin: 12px 0 8px 0;">
+        <div style="display: flex; justify-content: space-between; font-size: 0.9em; margin-bottom: 4px;">
+          <span>Win Probability</span>
+          <span style="font-weight: bold;">${winPct}%</span>
+        </div>
+        <div style="height: 12px; background: #e74c3c; border-radius: 6px; overflow: hidden;">
+          <div style="height: 100%; width: ${winPct}%; background: ${DEFAULT_THEME.success}; transition: width 0.3s;"></div>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 0.75em; color: ${DEFAULT_THEME.textMuted}; margin-top: 2px;">
+          <span>Black</span>
+          <span>White</span>
+        </div>
+      </div>
+    `;
+
+    mlElement.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <strong>ML Evaluation</strong>
+        <span style="font-size: 0.85em; color: ${DEFAULT_THEME.textMuted};">
+          Confidence: ${confidencePct}%
+        </span>
+      </div>
+      ${probBarHtml}
+      <div style="font-size: 0.9em; font-weight: 500; margin-bottom: 6px;">Feature Importance:</div>
+      ${featuresHtml}
+    `;
+  }
+
+  /**
    * Update advantage indicator
    */
   public updateAdvantage(score: Score | null): void {
@@ -344,6 +417,7 @@ export class PanelComponent {
     content.appendChild(this.createColorSelection());
     content.appendChild(this.createOpeningInfoDisplay());
     content.appendChild(this.createPatternDisplay());
+    content.appendChild(this.createMLEvaluationDisplay());
     content.appendChild(this.createAdvantageIndicator());
     content.appendChild(this.createStatusDisplay());
     content.appendChild(this.createAutoPlayButton());
@@ -439,6 +513,23 @@ export class PanelComponent {
       border: `1px solid ${DEFAULT_THEME.border}`,
     });
     container.id = 'pattern-info';
+
+    return container;
+  }
+
+  /**
+   * Create ML evaluation display
+   */
+  private createMLEvaluationDisplay(): HTMLElement {
+    const container = createElement('div', {
+      display: 'none',
+      margin: '10px 0',
+      padding: '12px',
+      background: `linear-gradient(135deg, ${DEFAULT_THEME.surface} 0%, #f0f5ff 100%)`,
+      borderRadius: '6px',
+      border: `1px solid ${DEFAULT_THEME.accent}`,
+    });
+    container.id = 'ml-evaluation';
 
     return container;
   }

@@ -6,7 +6,7 @@ import type { AnalysisEntry, EngineEvent, PlayerColor } from '@/types';
 import { DEFAULT_ENGINE_CONFIG } from '@/types';
 import { PanelComponent, clearHighlights, displayMoveHighlight } from '@/components';
 import { AnalysisManager, AutoPlayManager } from '@/core';
-import { EngineService, boardService, openingBookService, patternService } from '@/services';
+import { EngineService, boardService, evaluationService, openingBookService, patternService } from '@/services';
 
 const POLLING_INTERVAL = 500;
 
@@ -131,6 +131,10 @@ export class ChessAssistant {
     // Update pattern analysis
     const patternAnalysis = patternService.analyzePosition(fen);
     this.panel.updatePatternInfo(patternAnalysis);
+
+    // Update ML evaluation
+    const mlEvaluation = evaluationService.evaluatePosition(fen);
+    this.panel.updateMLEvaluation(mlEvaluation);
 
     // Build status with opening info
     let statusText = isFinal
