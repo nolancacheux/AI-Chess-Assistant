@@ -48,8 +48,5 @@
   },
   "engines": {
     "node": ">=18.0.0"
-  },
-  "dependencies": {
-    "stockfish": "^17.1.0"
   }
 }

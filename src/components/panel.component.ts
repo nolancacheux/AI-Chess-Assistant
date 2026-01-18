@@ -1,12 +1,8 @@
 /**
- * Panel Component - Modern UI panel for the chess assistant
+ * Panel Component - Compact draggable UI panel for the chess assistant
  */
 
 import type { AnalysisEntry, ColorSelectionCallback, PlayerColor, Score } from '@/types';
-import type { MLEvaluation } from '@/services/evaluation.service';
-import type { OpeningInfo } from '@/services/openingbook.service';
-import type { PatternAnalysis } from '@/services/patterns.service';
-import { DEFAULT_THEME } from '@/types';
 import { createElement } from '@/utils';
 import { getMoveRating, scoreToPercentage } from '@/utils/chess.utils';
 
@@ -20,7 +16,7 @@ interface PanelCallbacks {
 }
 
 /**
- * Chess Assistant Panel - Modern Design
+ * Chess Assistant Panel - Compact & Draggable
  */
 export class PanelComponent {
   private panel: HTMLElement | null = null;
@@ -39,6 +35,7 @@ export class PanelComponent {
     this.injectStyles();
     this.panel = this.createPanel();
     document.body.appendChild(this.panel);
+    this.setupDragListeners();
   }
 
   public destroy(): void {
@@ -47,180 +44,106 @@ export class PanelComponent {
   }
 
   public updateStatus(text: string): void {
-    const statusElement = document.getElementById('ca-status');
-    if (statusElement) {
-      statusElement.textContent = this.isAutoPlayActive ? `${text} (Auto)` : text;
+    const el = document.getElementById('ca-status');
+    if (el) {
+      el.textContent = this.isAutoPlayActive ? `${text} (Auto)` : text;
     }
   }
 
   public showColorSelection(): void {
-    const container = document.getElementById('ca-color-selection');
-    const controlButton = document.getElementById('ca-control-btn');
+    const container = document.getElementById('ca-colors');
+    const btn = document.getElementById('ca-main-btn');
     if (container) container.style.display = 'flex';
-    if (controlButton) {
-      controlButton.textContent = 'Select Color';
-      (controlButton as HTMLButtonElement).disabled = true;
-      controlButton.classList.add('disabled');
+    if (btn) {
+      btn.textContent = 'Select Color';
+      (btn as HTMLButtonElement).disabled = true;
+      btn.classList.add('disabled');
     }
   }
 
   public showActiveState(): void {
-    const container = document.getElementById('ca-color-selection');
-    const controlButton = document.getElementById('ca-control-btn');
-    const secondaryBtns = document.getElementById('ca-secondary-btns');
+    const container = document.getElementById('ca-colors');
+    const btn = document.getElementById('ca-main-btn');
+    const actions = document.getElementById('ca-actions');
 
     if (container) container.style.display = 'none';
-    if (controlButton) {
-      controlButton.textContent = 'Stop';
-      (controlButton as HTMLButtonElement).disabled = false;
-      controlButton.classList.remove('disabled');
-      controlButton.classList.add('active');
+    if (btn) {
+      btn.textContent = 'Stop';
+      (btn as HTMLButtonElement).disabled = false;
+      btn.classList.remove('disabled');
+      btn.classList.add('stop');
     }
-    if (secondaryBtns) secondaryBtns.style.display = 'flex';
+    if (actions) actions.style.display = 'flex';
   }
 
   public showInactiveState(): void {
-    const container = document.getElementById('ca-color-selection');
-    const controlButton = document.getElementById('ca-control-btn');
-    const secondaryBtns = document.getElementById('ca-secondary-btns');
+    const container = document.getElementById('ca-colors');
+    const btn = document.getElementById('ca-main-btn');
+    const actions = document.getElementById('ca-actions');
 
     if (container) container.style.display = 'none';
-    if (controlButton) {
-      controlButton.textContent = 'Start';
-      (controlButton as HTMLButtonElement).disabled = false;
-      controlButton.classList.remove('disabled', 'active');
+    if (btn) {
+      btn.textContent = 'Start';
+      (btn as HTMLButtonElement).disabled = false;
+      btn.classList.remove('disabled', 'stop');
     }
-    if (secondaryBtns) secondaryBtns.style.display = 'none';
+    if (actions) actions.style.display = 'none';
     this.isAutoPlayActive = false;
+
+    const autoBtn = document.getElementById('ca-auto-btn');
+    if (autoBtn) {
+      autoBtn.classList.remove('active');
+      autoBtn.textContent = 'Auto';
+    }
   }
 
   public updateHistory(history: AnalysisEntry[]): void {
-    const historyPanel = document.getElementById('ca-history');
-    if (!historyPanel) return;
+    const el = document.getElementById('ca-history');
+    if (!el) return;
 
     const sorted = [...history].sort(
       (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
     );
 
     if (sorted.length === 0) {
-      historyPanel.innerHTML = '<div class="ca-empty">No analysis yet</div>';
+      el.innerHTML = '<div class="ca-empty">No moves analyzed yet</div>';
       return;
     }
 
-    historyPanel.innerHTML = sorted
+    el.innerHTML = sorted
       .slice(0, 5)
-      .map(
-        (entry, i) => `
-        <div class="ca-history-item ${i === 0 ? 'latest' : ''}">
-          <span class="ca-move">${entry.move || '-'}</span>
-          <span class="ca-score">${entry.score ?? '-'}</span>
-          <span class="ca-rating ${getMoveRating(entry.score).toLowerCase()}">${getMoveRating(entry.score)}</span>
-          <span class="ca-depth">D${entry.depth || '-'}</span>
-        </div>
-      `
-      )
+      .map((entry, i) => {
+        const rating = getMoveRating(entry.score);
+        const ratingClass = rating.toLowerCase();
+        const scoreDisplay = entry.score !== null
+          ? (entry.score >= 0 ? '+' : '') + (entry.score / 100).toFixed(1)
+          : '?';
+        return `
+          <div class="ca-move ${i === 0 ? 'latest' : ''}">
+            <span class="ca-move-name">${entry.move || '—'}</span>
+            <span class="ca-move-score">${scoreDisplay}</span>
+            <span class="ca-move-rating ${ratingClass}">${rating}</span>
+          </div>
+        `;
+      })
       .join('');
   }
 
-  public updateOpeningInfo(info: OpeningInfo): void {
-    const el = document.getElementById('ca-opening');
-    if (!el) return;
-
-    if (!info.isInBook && !info.name) {
-      el.style.display = 'none';
-      return;
-    }
-
-    el.style.display = 'block';
-    const eco = info.eco ? `<span class="ca-eco">${info.eco}</span>` : '';
-    const bookMoves = info.bookMoves.length > 0
-      ? `<div class="ca-book-moves">${info.bookMoves.slice(0, 3).map(m =>
-          `<span class="ca-book-move">${m.move} <small>${(m.winRate * 100).toFixed(0)}%</small></span>`
-        ).join('')}</div>`
-      : '';
-
-    el.innerHTML = `
-      <div class="ca-opening-header">${eco}${info.name || 'Unknown'}</div>
-      ${info.description ? `<div class="ca-opening-desc">${info.description}</div>` : ''}
-      ${bookMoves}
-    `;
-  }
-
-  public updatePatternInfo(analysis: PatternAnalysis): void {
-    const el = document.getElementById('ca-patterns');
-    if (!el) return;
-
-    if (analysis.patterns.length === 0) {
-      el.style.display = 'none';
-      return;
-    }
-
-    el.style.display = 'block';
-    const icons: Record<string, string> = { tactical: '⚔', positional: '◎', structural: '▦' };
-    const colors: Record<string, string> = { critical: '#ef4444', important: '#f59e0b', minor: '#6366f1' };
-
-    el.innerHTML = `
-      <div class="ca-section-header">
-        <span>Patterns</span>
-        <span class="ca-eval ${analysis.evaluation >= 0 ? 'positive' : 'negative'}">
-          ${analysis.evaluation >= 0 ? '+' : ''}${analysis.evaluation.toFixed(2)}
-        </span>
-      </div>
-      <div class="ca-patterns-list">
-        ${analysis.patterns.slice(0, 4).map(p => `
-          <div class="ca-pattern" style="border-left-color: ${colors[p.severity]}">
-            <span class="ca-pattern-icon">${icons[p.category]}</span>
-            <span class="ca-pattern-name">${p.name}</span>
-            ${p.squares?.length ? `<span class="ca-pattern-squares">${p.squares.slice(0, 2).join(',')}</span>` : ''}
-          </div>
-        `).join('')}
-      </div>
-    `;
-  }
-
-  public updateMLEvaluation(evaluation: MLEvaluation): void {
-    const el = document.getElementById('ca-ml');
-    if (!el) return;
-
-    el.style.display = 'block';
-    const winPct = (evaluation.winProbability * 100).toFixed(0);
-    const confPct = (evaluation.confidence * 100).toFixed(0);
-
-    el.innerHTML = `
-      <div class="ca-section-header">
-        <span>Win Probability</span>
-        <span class="ca-confidence">${confPct}% conf</span>
-      </div>
-      <div class="ca-win-bar">
-        <div class="ca-win-fill" style="width: ${winPct}%"></div>
-        <span class="ca-win-label">${winPct}%</span>
-      </div>
-      <div class="ca-features">
-        ${evaluation.featureImportance.slice(0, 3).map(f => `
-          <div class="ca-feature">
-            <span class="ca-feature-name">${f.name}</span>
-            <div class="ca-feature-bar">
-              <div class="ca-feature-fill ${f.impact >= 0 ? 'positive' : 'negative'}"
-                   style="width: ${Math.min(100, Math.abs(f.impact) * 50)}%"></div>
-            </div>
-          </div>
-        `).join('')}
-      </div>
-    `;
-  }
-
   public updateAdvantage(score: Score | null): void {
-    const bar = document.getElementById('ca-adv-bar');
-    const label = document.getElementById('ca-adv-label');
-    if (!bar || !label) return;
+    const fill = document.getElementById('ca-bar-fill');
+    const label = document.getElementById('ca-score-label');
+    if (!fill || !label) return;
 
     const pct = scoreToPercentage(score);
-    bar.style.width = `${pct}%`;
+    fill.style.width = `${pct}%`;
 
     if (score !== null) {
-      const display = score >= 0 ? `+${(score / 100).toFixed(1)}` : (score / 100).toFixed(1);
-      label.textContent = display;
-      label.className = `ca-adv-label ${score >= 0 ? 'positive' : 'negative'}`;
+      const val = score / 100;
+      label.textContent = (val >= 0 ? '+' : '') + val.toFixed(1);
+      label.className = `ca-score-label ${val >= 0 ? 'white' : 'black'}`;
+    } else {
+      label.textContent = '0.0';
+      label.className = 'ca-score-label';
     }
   }
 
@@ -232,284 +155,206 @@ export class PanelComponent {
     style.textContent = `
       #${PANEL_ID} {
         position: fixed;
-        right: 16px;
         top: 16px;
-        width: 320px;
-        background: ${DEFAULT_THEME.background};
+        right: 16px;
+        width: 260px;
+        background: #ffffff;
         border-radius: 12px;
-        box-shadow: 0 4px 24px rgba(0,0,0,0.4), 0 0 0 1px ${DEFAULT_THEME.border};
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.05);
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         font-size: 13px;
-        color: ${DEFAULT_THEME.text};
+        color: #1a1a1a;
         z-index: 10000;
         overflow: hidden;
+        user-select: none;
       }
-      #${PANEL_ID} * { box-sizing: border-box; }
 
       .ca-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 10px 12px;
-        background: ${DEFAULT_THEME.surface};
-        border-bottom: 1px solid ${DEFAULT_THEME.border};
+        padding: 12px 14px;
+        background: #f8f9fa;
+        border-bottom: 1px solid #e5e5e5;
         cursor: grab;
-        user-select: none;
       }
       .ca-header:active { cursor: grabbing; }
+
       .ca-title {
         font-weight: 600;
-        font-size: 13px;
-        color: ${DEFAULT_THEME.text};
+        font-size: 14px;
+        color: #333;
+        letter-spacing: -0.2px;
       }
-      .ca-header-btns {
-        display: flex;
-        gap: 4px;
-      }
+
       .ca-header-btn {
         width: 24px;
         height: 24px;
         border: none;
-        background: transparent;
-        color: ${DEFAULT_THEME.textMuted};
+        background: #e5e5e5;
+        color: #666;
+        border-radius: 6px;
         cursor: pointer;
-        border-radius: 4px;
-        font-size: 14px;
+        font-size: 16px;
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: all 0.15s;
+        transition: background 0.15s;
       }
-      .ca-header-btn:hover {
-        background: ${DEFAULT_THEME.border};
-        color: ${DEFAULT_THEME.text};
-      }
+      .ca-header-btn:hover { background: #d5d5d5; }
 
-      .ca-content {
-        padding: 12px;
+      .ca-body {
+        padding: 14px;
         display: flex;
         flex-direction: column;
         gap: 12px;
       }
 
-      .ca-control-btn {
+      .ca-bar-container {
+        position: relative;
+      }
+      .ca-bar {
+        height: 8px;
+        background: #1a1a1a;
+        border-radius: 4px;
+        overflow: hidden;
+      }
+      .ca-bar-fill {
+        height: 100%;
+        width: 50%;
+        background: #fff;
+        border: 1px solid #e0e0e0;
+        border-radius: 4px;
+        transition: width 0.3s ease;
+      }
+      .ca-score-label {
+        position: absolute;
+        top: -18px;
+        right: 0;
+        font-size: 12px;
+        font-weight: 700;
+        color: #666;
+      }
+      .ca-score-label.white { color: #16a34a; }
+      .ca-score-label.black { color: #dc2626; }
+
+      .ca-main-btn {
         width: 100%;
-        padding: 10px 16px;
+        padding: 10px;
         border: none;
         border-radius: 8px;
         font-weight: 600;
         font-size: 13px;
         cursor: pointer;
+        background: #2563eb;
+        color: #fff;
         transition: all 0.2s;
-        background: ${DEFAULT_THEME.primary};
-        color: white;
       }
-      .ca-control-btn:hover { opacity: 0.9; transform: translateY(-1px); }
-      .ca-control-btn.disabled { opacity: 0.5; cursor: not-allowed; }
-      .ca-control-btn.active { background: ${DEFAULT_THEME.error}; }
+      .ca-main-btn:hover { background: #1d4ed8; }
+      .ca-main-btn.disabled { opacity: 0.6; cursor: not-allowed; }
+      .ca-main-btn.stop { background: #dc2626; }
+      .ca-main-btn.stop:hover { background: #b91c1c; }
 
-      .ca-color-selection {
+      .ca-colors {
         display: none;
         gap: 12px;
         justify-content: center;
         padding: 8px 0;
       }
       .ca-color-btn {
-        width: 56px;
-        height: 56px;
-        border: 2px solid ${DEFAULT_THEME.border};
-        border-radius: 12px;
+        width: 52px;
+        height: 52px;
+        border: 2px solid #e5e5e5;
+        border-radius: 10px;
         cursor: pointer;
-        font-size: 28px;
+        font-size: 26px;
         display: flex;
         align-items: center;
         justify-content: center;
         transition: all 0.2s;
-        background: ${DEFAULT_THEME.surface};
+        background: #fff;
       }
-      .ca-color-btn:hover {
-        border-color: ${DEFAULT_THEME.primary};
-        transform: scale(1.05);
-      }
-      .ca-color-btn.white { background: #f0f0f0; color: #1a1a1a; }
-      .ca-color-btn.black { background: #1a1a1a; color: #f0f0f0; }
+      .ca-color-btn:hover { border-color: #2563eb; transform: scale(1.05); }
+      .ca-color-btn.white { background: #f8f8f8; }
+      .ca-color-btn.black { background: #2a2a2a; color: #fff; }
 
-      .ca-secondary-btns {
+      .ca-actions {
         display: none;
         gap: 8px;
       }
-      .ca-secondary-btn {
+      .ca-action-btn {
         flex: 1;
         padding: 8px;
-        border: 1px solid ${DEFAULT_THEME.border};
+        border: 1px solid #e5e5e5;
         border-radius: 6px;
-        background: transparent;
-        color: ${DEFAULT_THEME.textMuted};
+        background: #fff;
+        color: #666;
         font-size: 12px;
+        font-weight: 500;
         cursor: pointer;
-        transition: all 0.2s;
+        transition: all 0.15s;
       }
-      .ca-secondary-btn:hover {
-        background: ${DEFAULT_THEME.surface};
-        color: ${DEFAULT_THEME.text};
-        border-color: ${DEFAULT_THEME.primary};
-      }
-      .ca-secondary-btn.active {
-        background: ${DEFAULT_THEME.success};
-        color: white;
-        border-color: ${DEFAULT_THEME.success};
-      }
+      .ca-action-btn:hover { border-color: #2563eb; color: #2563eb; }
+      .ca-action-btn.active { background: #16a34a; color: #fff; border-color: #16a34a; }
 
       .ca-status {
-        padding: 12px;
-        background: ${DEFAULT_THEME.surface};
-        border-radius: 8px;
-        text-align: center;
-        font-weight: 500;
-        color: ${DEFAULT_THEME.accent};
-      }
-
-      .ca-advantage {
-        position: relative;
-        height: 8px;
-        background: ${DEFAULT_THEME.error};
-        border-radius: 4px;
-        overflow: visible;
-      }
-      .ca-adv-bar {
-        height: 100%;
-        background: ${DEFAULT_THEME.success};
-        border-radius: 4px;
-        transition: width 0.3s ease;
-        width: 50%;
-      }
-      .ca-adv-label {
-        position: absolute;
-        top: -20px;
-        right: 0;
-        font-size: 11px;
-        font-weight: 600;
-      }
-      .ca-adv-label.positive { color: ${DEFAULT_THEME.success}; }
-      .ca-adv-label.negative { color: ${DEFAULT_THEME.error}; }
-
-      .ca-section {
-        display: none;
-        background: ${DEFAULT_THEME.surface};
-        border-radius: 8px;
         padding: 10px 12px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        font-size: 12px;
+        color: #666;
+        text-align: center;
       }
-      .ca-section-header {
+
+      .ca-history {
+        max-height: 150px;
+        overflow-y: auto;
         display: flex;
-        justify-content: space-between;
-        align-items: center;
-        font-weight: 600;
-        font-size: 11px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        color: ${DEFAULT_THEME.textMuted};
-        margin-bottom: 8px;
+        flex-direction: column;
+        gap: 6px;
       }
-
-      .ca-opening-header { font-weight: 600; color: ${DEFAULT_THEME.text}; }
-      .ca-eco {
-        display: inline-block;
-        background: ${DEFAULT_THEME.primary};
-        color: white;
-        padding: 2px 6px;
-        border-radius: 4px;
-        font-size: 10px;
-        margin-right: 6px;
-      }
-      .ca-opening-desc { font-size: 11px; color: ${DEFAULT_THEME.textMuted}; margin-top: 4px; }
-      .ca-book-moves { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
-      .ca-book-move {
-        background: ${DEFAULT_THEME.background};
-        padding: 4px 8px;
-        border-radius: 4px;
-        font-size: 11px;
-      }
-      .ca-book-move small { color: ${DEFAULT_THEME.success}; margin-left: 4px; }
-
-      .ca-patterns-list { display: flex; flex-direction: column; gap: 4px; }
-      .ca-pattern {
+      .ca-move {
         display: flex;
         align-items: center;
         gap: 8px;
-        padding: 6px 8px;
-        background: ${DEFAULT_THEME.background};
+        padding: 8px 10px;
+        background: #f8f9fa;
+        border-radius: 6px;
+        opacity: 0.6;
+        transition: opacity 0.2s;
+      }
+      .ca-move.latest { opacity: 1; background: #f0f4ff; }
+      .ca-move-name {
+        font-weight: 600;
+        font-family: 'SF Mono', Monaco, monospace;
+        min-width: 50px;
+      }
+      .ca-move-score {
+        color: #888;
+        font-size: 11px;
+        min-width: 40px;
+      }
+      .ca-move-rating {
+        margin-left: auto;
+        padding: 2px 8px;
         border-radius: 4px;
-        border-left: 3px solid;
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+      }
+      .ca-move-rating.excellent { background: #dcfce7; color: #16a34a; }
+      .ca-move-rating.good { background: #dbeafe; color: #2563eb; }
+      .ca-move-rating.ok { background: #fef3c7; color: #d97706; }
+      .ca-move-rating.poor { background: #fee2e2; color: #dc2626; }
+
+      .ca-empty {
+        text-align: center;
+        color: #999;
+        padding: 16px;
         font-size: 12px;
       }
-      .ca-pattern-icon { opacity: 0.7; }
-      .ca-pattern-name { flex: 1; }
-      .ca-pattern-squares { color: ${DEFAULT_THEME.textMuted}; font-size: 10px; }
-      .ca-eval { font-weight: 600; font-size: 12px; }
-      .ca-eval.positive { color: ${DEFAULT_THEME.success}; }
-      .ca-eval.negative { color: ${DEFAULT_THEME.error}; }
 
-      .ca-win-bar {
-        position: relative;
-        height: 24px;
-        background: ${DEFAULT_THEME.error};
-        border-radius: 6px;
-        overflow: hidden;
-      }
-      .ca-win-fill {
-        height: 100%;
-        background: ${DEFAULT_THEME.success};
-        transition: width 0.3s;
-      }
-      .ca-win-label {
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        font-weight: 700;
-        color: white;
-        text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-      }
-      .ca-confidence { font-size: 10px; color: ${DEFAULT_THEME.textMuted}; }
-      .ca-features { margin-top: 8px; display: flex; flex-direction: column; gap: 4px; }
-      .ca-feature { display: flex; align-items: center; gap: 8px; font-size: 11px; }
-      .ca-feature-name { width: 80px; color: ${DEFAULT_THEME.textMuted}; }
-      .ca-feature-bar {
-        flex: 1;
-        height: 4px;
-        background: ${DEFAULT_THEME.background};
-        border-radius: 2px;
-        overflow: hidden;
-      }
-      .ca-feature-fill { height: 100%; border-radius: 2px; }
-      .ca-feature-fill.positive { background: ${DEFAULT_THEME.success}; }
-      .ca-feature-fill.negative { background: ${DEFAULT_THEME.error}; }
-
-      .ca-history { max-height: 140px; overflow-y: auto; }
-      .ca-history-item {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 6px 0;
-        border-bottom: 1px solid ${DEFAULT_THEME.border};
-        opacity: 0.6;
-      }
-      .ca-history-item.latest { opacity: 1; }
-      .ca-history-item:last-child { border-bottom: none; }
-      .ca-move { font-weight: 600; font-family: monospace; min-width: 50px; }
-      .ca-score { color: ${DEFAULT_THEME.textMuted}; min-width: 40px; }
-      .ca-rating {
-        padding: 2px 6px;
-        border-radius: 4px;
-        font-size: 10px;
-        font-weight: 600;
-      }
-      .ca-rating.excellent { background: ${DEFAULT_THEME.success}; color: white; }
-      .ca-rating.good { background: #22d3ee; color: #0f172a; }
-      .ca-rating.ok { background: ${DEFAULT_THEME.warning}; color: #0f172a; }
-      .ca-rating.poor { background: ${DEFAULT_THEME.error}; color: white; }
-      .ca-depth { color: ${DEFAULT_THEME.textMuted}; font-size: 11px; margin-left: auto; }
-      .ca-empty { text-align: center; color: ${DEFAULT_THEME.textMuted}; padding: 12px; }
+      .ca-collapsed .ca-body { display: none; }
     `;
     document.head.appendChild(style);
   }
@@ -521,39 +366,32 @@ export class PanelComponent {
     panel.innerHTML = `
       <div class="ca-header" id="ca-header">
         <span class="ca-title">Chess Assistant</span>
-        <div class="ca-header-btns">
-          <button class="ca-header-btn" id="ca-collapse" title="Collapse">−</button>
-        </div>
+        <button class="ca-header-btn" id="ca-collapse" title="Minimize">−</button>
       </div>
-      <div class="ca-content" id="ca-content">
-        <button class="ca-control-btn" id="ca-control-btn">Start</button>
+      <div class="ca-body">
+        <div class="ca-bar-container">
+          <span class="ca-score-label" id="ca-score-label">0.0</span>
+          <div class="ca-bar">
+            <div class="ca-bar-fill" id="ca-bar-fill"></div>
+          </div>
+        </div>
 
-        <div class="ca-color-selection" id="ca-color-selection">
+        <button class="ca-main-btn" id="ca-main-btn">Start</button>
+
+        <div class="ca-colors" id="ca-colors">
           <button class="ca-color-btn white" data-color="w">♔</button>
           <button class="ca-color-btn black" data-color="b">♚</button>
         </div>
 
-        <div class="ca-secondary-btns" id="ca-secondary-btns">
-          <button class="ca-secondary-btn" id="ca-autoplay-btn">Auto Play</button>
-          <button class="ca-secondary-btn" id="ca-change-color-btn">Change Color</button>
+        <div class="ca-actions" id="ca-actions">
+          <button class="ca-action-btn" id="ca-auto-btn">Auto</button>
+          <button class="ca-action-btn" id="ca-switch-btn">Switch</button>
         </div>
 
-        <div class="ca-status" id="ca-status">Click Start to begin</div>
+        <div class="ca-status" id="ca-status">Click Start to begin analysis</div>
 
-        <div class="ca-advantage">
-          <div class="ca-adv-bar" id="ca-adv-bar"></div>
-          <span class="ca-adv-label" id="ca-adv-label">0.0</span>
-        </div>
-
-        <div class="ca-section" id="ca-opening"></div>
-        <div class="ca-section" id="ca-patterns"></div>
-        <div class="ca-section" id="ca-ml"></div>
-
-        <div class="ca-section" id="ca-history-section" style="display: block;">
-          <div class="ca-section-header">Analysis History</div>
-          <div class="ca-history" id="ca-history">
-            <div class="ca-empty">No analysis yet</div>
-          </div>
+        <div class="ca-history" id="ca-history">
+          <div class="ca-empty">No moves analyzed yet</div>
         </div>
       </div>
     `;
@@ -563,17 +401,62 @@ export class PanelComponent {
   }
 
   private attachEventListeners(panel: HTMLElement): void {
-    // Drag functionality
-    const header = panel.querySelector('#ca-header') as HTMLElement;
-    if (header) {
-      header.addEventListener('mousedown', (e: MouseEvent) => {
-        if ((e.target as HTMLElement).closest('button')) return;
-        this.isDragging = true;
-        const rect = panel.getBoundingClientRect();
-        this.dragOffset = { x: e.clientX - rect.left, y: e.clientY - rect.top };
-        panel.style.transition = 'none';
+    // Collapse
+    panel.querySelector('#ca-collapse')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.isCollapsed = !this.isCollapsed;
+      panel.classList.toggle('ca-collapsed', this.isCollapsed);
+      const btn = panel.querySelector('#ca-collapse') as HTMLElement;
+      if (btn) btn.textContent = this.isCollapsed ? '+' : '−';
+    });
+
+    // Main button
+    panel.querySelector('#ca-main-btn')?.addEventListener('click', () => {
+      const btn = panel.querySelector('#ca-main-btn') as HTMLElement;
+      if (btn?.classList.contains('stop')) {
+        this.callbacks.onDeactivate();
+      } else if (!btn?.classList.contains('disabled')) {
+        this.callbacks.onActivate();
+      }
+    });
+
+    // Color selection
+    panel.querySelectorAll('.ca-color-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const color = (btn as HTMLElement).dataset.color as PlayerColor;
+        this.callbacks.onColorSelect(color);
       });
-    }
+    });
+
+    // Auto play
+    panel.querySelector('#ca-auto-btn')?.addEventListener('click', () => {
+      this.isAutoPlayActive = !this.isAutoPlayActive;
+      const btn = panel.querySelector('#ca-auto-btn') as HTMLElement;
+      if (btn) {
+        btn.classList.toggle('active', this.isAutoPlayActive);
+        btn.textContent = this.isAutoPlayActive ? 'Stop Auto' : 'Auto';
+      }
+      this.callbacks.onAutoPlayToggle(this.isAutoPlayActive);
+    });
+
+    // Switch color
+    panel.querySelector('#ca-switch-btn')?.addEventListener('click', () => {
+      this.callbacks.onDeactivate();
+      this.showColorSelection();
+    });
+  }
+
+  private setupDragListeners(): void {
+    const header = document.getElementById('ca-header');
+    if (!header || !this.panel) return;
+
+    header.addEventListener('mousedown', (e: MouseEvent) => {
+      if ((e.target as HTMLElement).closest('button')) return;
+      this.isDragging = true;
+      const rect = this.panel!.getBoundingClientRect();
+      this.dragOffset = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      this.panel!.style.transition = 'none';
+    });
 
     document.addEventListener('mousemove', (e: MouseEvent) => {
       if (!this.isDragging || !this.panel) return;
@@ -587,48 +470,8 @@ export class PanelComponent {
     document.addEventListener('mouseup', () => {
       if (this.isDragging && this.panel) {
         this.isDragging = false;
-        this.panel.style.transition = 'box-shadow 0.2s';
+        this.panel.style.transition = '';
       }
-    });
-
-    // Collapse button
-    panel.querySelector('#ca-collapse')?.addEventListener('click', (e) => {
-      e.stopPropagation();
-      this.isCollapsed = !this.isCollapsed;
-      const content = panel.querySelector('#ca-content') as HTMLElement;
-      const btn = panel.querySelector('#ca-collapse') as HTMLElement;
-      if (content) content.style.display = this.isCollapsed ? 'none' : 'flex';
-      if (btn) btn.textContent = this.isCollapsed ? '+' : '−';
-    });
-
-    // Control button
-    panel.querySelector('#ca-control-btn')?.addEventListener('click', () => {
-      this.callbacks.onActivate();
-    });
-
-    // Color selection
-    panel.querySelectorAll('.ca-color-btn').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const color = (btn as HTMLElement).dataset.color as PlayerColor;
-        this.callbacks.onColorSelect(color);
-      });
-    });
-
-    // Auto play button
-    panel.querySelector('#ca-autoplay-btn')?.addEventListener('click', () => {
-      this.isAutoPlayActive = !this.isAutoPlayActive;
-      const btn = panel.querySelector('#ca-autoplay-btn') as HTMLElement;
-      if (btn) {
-        btn.classList.toggle('active', this.isAutoPlayActive);
-        btn.textContent = this.isAutoPlayActive ? 'Stop Auto' : 'Auto Play';
-      }
-      this.callbacks.onAutoPlayToggle(this.isAutoPlayActive);
-    });
-
-    // Change color button
-    panel.querySelector('#ca-change-color-btn')?.addEventListener('click', () => {
-      this.callbacks.onDeactivate();
-      this.showColorSelection();
     });
   }
 }

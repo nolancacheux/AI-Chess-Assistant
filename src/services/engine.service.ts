@@ -17,8 +17,6 @@ import { DEFAULT_ENGINE_CONFIG } from '@/types';
 /**
  * Engine Service - Manages Stockfish web worker
  */
-const ANALYSIS_TIMEOUT = 10000; // 10 seconds max
-
 export class EngineService {
   private worker: Worker | null = null;
   private state: EngineState = 'idle';
@@ -27,7 +25,6 @@ export class EngineService {
   private currentBestMove: UCIMove | null = null;
   private currentScore: Score | null = null;
   private currentDepth: Depth = 0;
-  private analysisTimeout: ReturnType<typeof setTimeout> | null = null;
 
   constructor(config: Partial<EngineConfig> = {}) {
     this.config = { ...DEFAULT_ENGINE_CONFIG, ...config };
@@ -35,56 +32,19 @@ export class EngineService {
 
   /**
    * Initialize the Stockfish engine
-   * Uses chess.com's bundled Stockfish (same approach as original working version)
    */
   public initialize(): boolean {
-    // Chess.com Stockfish paths (relative to chess.com domain)
-    const stockfishPaths = [
-      '/bundles/app/js/vendor/jschessengine/stockfish.asm.1abfa10c.js',
-      '/bundles/app/js/vendor/stockfish.wasm/stockfish.js',
-      '/bundles/app/js/vendor/stockfish.js',
-    ];
-
-    for (const path of stockfishPaths) {
-      try {
-        console.log('[EngineService] Trying:', path);
-        this.worker = new Worker(path);
-        this.setupMessageHandler();
-        this.worker.postMessage('uci');
-        this.state = 'idle';
-        this.emit({ type: 'ready', data: null });
-        console.log('[EngineService] Successfully loaded from:', path);
-        return true;
-      } catch (error) {
-        console.log('[EngineService] Failed:', path);
-        this.worker = null;
-      }
+    try {
+      this.worker = new Worker(this.config.workerPath);
+      this.setupMessageHandler();
+      this.state = 'idle';
+      return true;
+    } catch (error) {
+      console.error('[EngineService] Failed to initialize:', error);
+      this.state = 'error';
+      this.emit({ type: 'error', data: error as Error });
+      return false;
     }
-
-    // Try to find Stockfish script dynamically
-    const scripts = document.querySelectorAll('script[src*="stockfish"]');
-    for (const script of scripts) {
-      try {
-        const src = (script as HTMLScriptElement).src;
-        const path = new URL(src).pathname;
-        console.log('[EngineService] Found script, trying:', path);
-        this.worker = new Worker(path);
-        this.setupMessageHandler();
-        this.worker.postMessage('uci');
-        this.state = 'idle';
-        this.emit({ type: 'ready', data: null });
-        console.log('[EngineService] Successfully loaded from:', path);
-        return true;
-      } catch (error) {
-        console.log('[EngineService] Script failed');
-        this.worker = null;
-      }
-    }
-
-    console.error('[EngineService] Failed to initialize engine');
-    this.state = 'error';
-    this.emit({ type: 'error', data: new Error('No engine available') });
-    return false;
   }
 
   /**
@@ -96,37 +56,14 @@ export class EngineService {
       return;
     }
 
-    // Clear any existing timeout
-    if (this.analysisTimeout) {
-      clearTimeout(this.analysisTimeout);
-    }
-
     const analysisDepth = depth ?? this.config.defaultDepth;
     this.state = 'analyzing';
     this.currentBestMove = null;
     this.currentScore = null;
     this.currentDepth = 0;
 
-    console.log('[EngineService] Starting analysis, depth:', analysisDepth);
     this.worker.postMessage(`position fen ${fen}`);
     this.worker.postMessage(`go depth ${analysisDepth}`);
-
-    // Set timeout to force completion if engine takes too long
-    this.analysisTimeout = setTimeout(() => {
-      if (this.state === 'analyzing' && this.currentBestMove) {
-        console.log('[EngineService] Timeout reached, using current best move');
-        this.state = 'idle';
-        this.emit({
-          type: 'bestmove',
-          data: {
-            bestMove: this.currentBestMove,
-            score: this.currentScore,
-            depth: this.currentDepth,
-            pv: [this.currentBestMove],
-          },
-        });
-      }
-    }, ANALYSIS_TIMEOUT);
   }
 
   /**
@@ -204,22 +141,11 @@ export class EngineService {
 
       if (typeof message !== 'string') return;
 
-      // Log all messages for debugging
-      if (message.startsWith('bestmove') || message.includes('depth')) {
-        console.log('[EngineService] Message:', message.substring(0, 100));
-      }
-
       if (message.startsWith('bestmove')) {
         this.handleBestMove(message);
-      } else if (message.startsWith('info') && message.includes('depth')) {
+      } else if (message.startsWith('info')) {
         this.handleInfo(message);
       }
-    };
-
-    this.worker.onerror = (error) => {
-      console.error('[EngineService] Worker error:', error);
-      this.state = 'error';
-      this.emit({ type: 'error', data: new Error('Worker error') });
     };
   }
 
@@ -227,24 +153,11 @@ export class EngineService {
    * Handle bestmove message
    */
   private handleBestMove(message: string): void {
-    // Clear timeout since we got a response
-    if (this.analysisTimeout) {
-      clearTimeout(this.analysisTimeout);
-      this.analysisTimeout = null;
-    }
-
     const parts = message.split(' ');
     const bestMove = parts[1];
 
-    if (!bestMove || bestMove === '(none)') {
-      console.log('[EngineService] No valid move found');
-      return;
-    }
-
     this.currentBestMove = bestMove;
     this.state = 'idle';
-
-    console.log('[EngineService] Best move:', bestMove, 'Score:', this.currentScore);
 
     this.emit({
       type: 'bestmove',
