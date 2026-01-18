@@ -35,56 +35,17 @@ export class EngineService {
 
   /**
    * Initialize the Stockfish engine
-   * Tries multiple sources: chess.com's bundled engine first, then our bundled version
+   * Uses our bundled Stockfish via blob URL workaround for MV3
    */
   public initialize(): boolean {
-    // Try chess.com's Stockfish first (available when on chess.com)
-    if (this.tryChessComEngine()) {
-      return true;
-    }
-
-    // Try our bundled Stockfish
+    // Try bundled engine first (most reliable)
     if (this.tryBundledEngine()) {
       return true;
     }
 
-    console.error('[EngineService] Failed to initialize any engine');
+    console.error('[EngineService] Failed to initialize engine');
     this.state = 'error';
     this.emit({ type: 'error', data: new Error('No engine available') });
-    return false;
-  }
-
-  /**
-   * Try to use publicly available Stockfish engines
-   */
-  private tryChessComEngine(): boolean {
-    // Reliable public Stockfish WASM sources
-    const enginePaths = [
-      // Lichess Stockfish (most reliable)
-      'https://lichess1.org/assets/_ysdPwS/javascripts/vendor/stockfish/stockfish.wasm.js',
-      'https://lichess.org/assets/javascripts/vendor/stockfish.wasm/stockfish.js',
-      // CDN hosted Stockfish
-      'https://cdn.jsdelivr.net/npm/stockfish.js@10.0.2/stockfish.js',
-      'https://unpkg.com/stockfish.js@10.0.2/stockfish.js',
-      // Chess.com paths (may change)
-      'https://www.chess.com/bundles/app/js/vendor/stockfish.wasm/stockfish.js',
-    ];
-
-    for (const path of enginePaths) {
-      try {
-        console.log('[EngineService] Trying engine:', path);
-        this.worker = new Worker(path);
-        this.setupMessageHandler();
-        this.worker.postMessage('uci');
-        this.state = 'idle';
-        this.emit({ type: 'ready', data: null });
-        console.log('[EngineService] Successfully loaded engine from:', path);
-        return true;
-      } catch (error) {
-        console.log('[EngineService] Failed to load:', path, error);
-        this.worker = null;
-      }
-    }
     return false;
   }
 
@@ -94,26 +55,34 @@ export class EngineService {
   private tryBundledEngine(): boolean {
     try {
       if (typeof chrome === 'undefined' || !chrome.runtime?.getURL) {
+        console.log('[EngineService] Not in extension context');
         return false;
       }
 
       const workerUrl = chrome.runtime.getURL(this.config.workerPath);
-      console.log('[EngineService] Trying bundled engine via fetch:', workerUrl);
+      console.log('[EngineService] Loading bundled engine from:', workerUrl);
 
-      // For MV3, we need to fetch the script and create a blob worker
-      // This is async, so we'll try a direct approach first
-      try {
-        this.worker = new Worker(workerUrl, { type: 'classic' });
-        this.setupMessageHandler();
-        this.worker.postMessage('uci');
-        this.state = 'idle';
-        this.emit({ type: 'ready', data: null });
-        console.log('[EngineService] Successfully loaded bundled engine');
-        return true;
-      } catch {
-        console.log('[EngineService] Direct worker creation failed, trying blob approach');
+      // Fetch the worker script and create a blob URL
+      // This bypasses MV3 content script worker restrictions
+      const xhr = new XMLHttpRequest();
+      xhr.open('GET', workerUrl, false); // Synchronous for simplicity
+      xhr.send();
+
+      if (xhr.status !== 200) {
+        console.error('[EngineService] Failed to fetch worker script:', xhr.status);
         return false;
       }
+
+      const blob = new Blob([xhr.responseText], { type: 'application/javascript' });
+      const blobUrl = URL.createObjectURL(blob);
+
+      this.worker = new Worker(blobUrl);
+      this.setupMessageHandler();
+      this.worker.postMessage('uci');
+      this.state = 'idle';
+      this.emit({ type: 'ready', data: null });
+      console.log('[EngineService] Successfully loaded bundled engine via blob');
+      return true;
     } catch (error) {
       console.error('[EngineService] Bundled engine failed:', error);
       return false;

@@ -27,6 +27,8 @@ export class PanelComponent {
   private callbacks: PanelCallbacks;
   private isCollapsed = false;
   private isAutoPlayActive = false;
+  private isDragging = false;
+  private dragOffset = { x: 0, y: 0 };
 
   constructor(callbacks: PanelCallbacks) {
     this.callbacks = callbacks;
@@ -248,42 +250,37 @@ export class PanelComponent {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 12px 16px;
+        padding: 10px 12px;
         background: ${DEFAULT_THEME.surface};
         border-bottom: 1px solid ${DEFAULT_THEME.border};
+        cursor: grab;
+        user-select: none;
       }
-      .ca-logo {
-        display: flex;
-        align-items: center;
-        gap: 8px;
+      .ca-header:active { cursor: grabbing; }
+      .ca-title {
         font-weight: 600;
-        font-size: 14px;
+        font-size: 13px;
+        color: ${DEFAULT_THEME.text};
       }
-      .ca-logo-icon {
+      .ca-header-btns {
+        display: flex;
+        gap: 4px;
+      }
+      .ca-header-btn {
         width: 24px;
         height: 24px;
-        background: linear-gradient(135deg, ${DEFAULT_THEME.primary}, ${DEFAULT_THEME.accent});
-        border-radius: 6px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 14px;
-      }
-      .ca-collapse-btn {
-        width: 28px;
-        height: 28px;
         border: none;
         background: transparent;
         color: ${DEFAULT_THEME.textMuted};
         cursor: pointer;
-        border-radius: 6px;
-        font-size: 18px;
+        border-radius: 4px;
+        font-size: 14px;
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: all 0.2s;
+        transition: all 0.15s;
       }
-      .ca-collapse-btn:hover {
+      .ca-header-btn:hover {
         background: ${DEFAULT_THEME.border};
         color: ${DEFAULT_THEME.text};
       }
@@ -522,12 +519,11 @@ export class PanelComponent {
     panel.id = PANEL_ID;
 
     panel.innerHTML = `
-      <div class="ca-header">
-        <div class="ca-logo">
-          <div class="ca-logo-icon">♔</div>
-          <span>Chess AI</span>
+      <div class="ca-header" id="ca-header">
+        <span class="ca-title">Chess Assistant</span>
+        <div class="ca-header-btns">
+          <button class="ca-header-btn" id="ca-collapse" title="Collapse">−</button>
         </div>
-        <button class="ca-collapse-btn" id="ca-collapse">−</button>
       </div>
       <div class="ca-content" id="ca-content">
         <button class="ca-control-btn" id="ca-control-btn">Start</button>
@@ -567,8 +563,37 @@ export class PanelComponent {
   }
 
   private attachEventListeners(panel: HTMLElement): void {
+    // Drag functionality
+    const header = panel.querySelector('#ca-header') as HTMLElement;
+    if (header) {
+      header.addEventListener('mousedown', (e: MouseEvent) => {
+        if ((e.target as HTMLElement).closest('button')) return;
+        this.isDragging = true;
+        const rect = panel.getBoundingClientRect();
+        this.dragOffset = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+        panel.style.transition = 'none';
+      });
+    }
+
+    document.addEventListener('mousemove', (e: MouseEvent) => {
+      if (!this.isDragging || !this.panel) return;
+      const x = Math.max(0, Math.min(window.innerWidth - this.panel.offsetWidth, e.clientX - this.dragOffset.x));
+      const y = Math.max(0, Math.min(window.innerHeight - this.panel.offsetHeight, e.clientY - this.dragOffset.y));
+      this.panel.style.left = `${x}px`;
+      this.panel.style.top = `${y}px`;
+      this.panel.style.right = 'auto';
+    });
+
+    document.addEventListener('mouseup', () => {
+      if (this.isDragging && this.panel) {
+        this.isDragging = false;
+        this.panel.style.transition = 'box-shadow 0.2s';
+      }
+    });
+
     // Collapse button
-    panel.querySelector('#ca-collapse')?.addEventListener('click', () => {
+    panel.querySelector('#ca-collapse')?.addEventListener('click', (e) => {
+      e.stopPropagation();
       this.isCollapsed = !this.isCollapsed;
       const content = panel.querySelector('#ca-content') as HTMLElement;
       const btn = panel.querySelector('#ca-collapse') as HTMLElement;
