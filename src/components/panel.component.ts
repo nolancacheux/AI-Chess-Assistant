@@ -25,6 +25,7 @@ export class PanelComponent {
   private isAutoPlayActive = false;
   private isDragging = false;
   private dragOffset = { x: 0, y: 0 };
+  private hasDragged = false;
 
   constructor(callbacks: PanelCallbacks) {
     this.callbacks = callbacks;
@@ -359,17 +360,24 @@ export class PanelComponent {
 
       .ca-mini {
         display: none;
-        width: 40px;
-        height: 40px;
+        width: 20px;
+        height: 20px;
         align-items: center;
         justify-content: center;
-        cursor: pointer;
+        cursor: grab;
         opacity: 0.5;
         transition: opacity 0.2s;
-        font-size: 24px;
+        font-size: 14px;
+        font-weight: bold;
+        color: #666;
+        background: #fff;
+        border-radius: 4px;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.15);
       }
       .ca-mini:hover { opacity: 0.8; }
+      .ca-mini:active { cursor: grabbing; }
       .ca-collapsed .ca-mini { display: flex; }
+      .ca-collapsed { width: auto; box-shadow: none; background: transparent; }
     `;
     document.head.appendChild(style);
   }
@@ -379,7 +387,7 @@ export class PanelComponent {
     panel.id = PANEL_ID;
 
     panel.innerHTML = `
-      <div class="ca-mini" id="ca-mini" title="Expand">♟</div>
+      <div class="ca-mini" id="ca-mini" title="Expand">+</div>
       <div class="ca-header" id="ca-header">
         <span class="ca-title">Chess Assistant</span>
         <button class="ca-header-btn" id="ca-collapse" title="Minimize">−</button>
@@ -424,10 +432,12 @@ export class PanelComponent {
       panel.classList.add('ca-collapsed');
     });
 
-    // Expand from mini
+    // Expand from mini (only if not dragged)
     panel.querySelector('#ca-mini')?.addEventListener('click', () => {
-      this.isCollapsed = false;
-      panel.classList.remove('ca-collapsed');
+      if (!this.hasDragged) {
+        this.isCollapsed = false;
+        panel.classList.remove('ca-collapsed');
+      }
     });
 
     // Main button
@@ -468,18 +478,25 @@ export class PanelComponent {
 
   private setupDragListeners(): void {
     const header = document.getElementById('ca-header');
-    if (!header || !this.panel) return;
+    const mini = document.getElementById('ca-mini');
+    if (!this.panel) return;
 
-    header.addEventListener('mousedown', (e: MouseEvent) => {
+    const startDrag = (e: MouseEvent) => {
       if ((e.target as HTMLElement).closest('button')) return;
       this.isDragging = true;
+      this.hasDragged = false;
       const rect = this.panel!.getBoundingClientRect();
       this.dragOffset = { x: e.clientX - rect.left, y: e.clientY - rect.top };
       this.panel!.style.transition = 'none';
-    });
+      e.preventDefault();
+    };
+
+    header?.addEventListener('mousedown', startDrag);
+    mini?.addEventListener('mousedown', startDrag);
 
     document.addEventListener('mousemove', (e: MouseEvent) => {
       if (!this.isDragging || !this.panel) return;
+      this.hasDragged = true;
       const x = Math.max(0, Math.min(window.innerWidth - this.panel.offsetWidth, e.clientX - this.dragOffset.x));
       const y = Math.max(0, Math.min(window.innerHeight - this.panel.offsetHeight, e.clientY - this.dragOffset.y));
       this.panel.style.left = `${x}px`;
