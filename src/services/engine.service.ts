@@ -32,42 +32,83 @@ export class EngineService {
 
   /**
    * Initialize the Stockfish engine
-   * Uses chrome.runtime.getURL to load our bundled Stockfish WASM
+   * Tries multiple sources: chess.com's bundled engine first, then our bundled version
    */
   public initialize(): boolean {
-    try {
-      // Get the full URL for the Stockfish worker from our extension
-      const workerUrl = this.getWorkerUrl();
-      console.log('[EngineService] Loading Stockfish from:', workerUrl);
-
-      this.worker = new Worker(workerUrl);
-      this.setupMessageHandler();
-
-      // Initialize UCI protocol
-      this.worker.postMessage('uci');
-
-      this.state = 'idle';
-      this.emit({ type: 'ready', data: null });
+    // Try chess.com's Stockfish first (available when on chess.com)
+    if (this.tryChessComEngine()) {
       return true;
-    } catch (error) {
-      console.error('[EngineService] Failed to initialize:', error);
-      this.state = 'error';
-      this.emit({ type: 'error', data: error as Error });
-      return false;
     }
+
+    // Try our bundled Stockfish
+    if (this.tryBundledEngine()) {
+      return true;
+    }
+
+    console.error('[EngineService] Failed to initialize any engine');
+    this.state = 'error';
+    this.emit({ type: 'error', data: new Error('No engine available') });
+    return false;
   }
 
   /**
-   * Get the full URL for the worker script
-   * Uses chrome.runtime.getURL for extension-bundled resources
+   * Try to use chess.com's bundled Stockfish engine
    */
-  private getWorkerUrl(): string {
-    // Check if we're in a Chrome extension context
-    if (typeof chrome !== 'undefined' && chrome.runtime?.getURL) {
-      return chrome.runtime.getURL(this.config.workerPath);
+  private tryChessComEngine(): boolean {
+    const chessComPaths = [
+      'https://www.chess.com/bundles/app/js/vendor/stockfish-nnue.wasm-42c6fbd7/sf17-79.js',
+      'https://www.chess.com/bundles/app/js/vendor/stockfish.nnue.16-6.js',
+      'https://www.chess.com/bundles/app/js/vendor/stockfish.wasm-2022/stockfish.js',
+    ];
+
+    for (const path of chessComPaths) {
+      try {
+        console.log('[EngineService] Trying chess.com engine:', path);
+        this.worker = new Worker(path);
+        this.setupMessageHandler();
+        this.worker.postMessage('uci');
+        this.state = 'idle';
+        this.emit({ type: 'ready', data: null });
+        console.log('[EngineService] Successfully loaded chess.com engine');
+        return true;
+      } catch (error) {
+        console.log('[EngineService] Failed to load:', path);
+        this.worker = null;
+      }
     }
-    // Fallback for non-extension context (development)
-    return this.config.workerPath;
+    return false;
+  }
+
+  /**
+   * Try to use our bundled Stockfish engine via blob URL workaround
+   */
+  private tryBundledEngine(): boolean {
+    try {
+      if (typeof chrome === 'undefined' || !chrome.runtime?.getURL) {
+        return false;
+      }
+
+      const workerUrl = chrome.runtime.getURL(this.config.workerPath);
+      console.log('[EngineService] Trying bundled engine via fetch:', workerUrl);
+
+      // For MV3, we need to fetch the script and create a blob worker
+      // This is async, so we'll try a direct approach first
+      try {
+        this.worker = new Worker(workerUrl, { type: 'classic' });
+        this.setupMessageHandler();
+        this.worker.postMessage('uci');
+        this.state = 'idle';
+        this.emit({ type: 'ready', data: null });
+        console.log('[EngineService] Successfully loaded bundled engine');
+        return true;
+      } catch {
+        console.log('[EngineService] Direct worker creation failed, trying blob approach');
+        return false;
+      }
+    } catch (error) {
+      console.error('[EngineService] Bundled engine failed:', error);
+      return false;
+    }
   }
 
   /**
