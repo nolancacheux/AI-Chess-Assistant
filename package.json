@@ -1,49 +1,52 @@
 {
-  "name": "chess-cheat-assistant",
-  "version": "3.0.0",
-  "description": "A hands-on, educational Chrome extension for chess.com that demonstrates chess engine analysis, move suggestions, advantage tracking, and browser automation. Learn how Stockfish evaluates positions, how browser extensions interact with chess boards, and how move automation works. For research, learning, and chess improvement only. Created by Nolan Cacheux.",
-  "main": "src/assistant.js",
+  "name": "ai-chess-assistant",
+  "version": "4.0.0",
+  "description": "Chrome extension integrating Stockfish chess engine for real-time position analysis, move evaluation, and intelligent suggestions. Built with TypeScript and modern architecture.",
+  "type": "module",
   "scripts": {
-    "test": "echo \"No test specified\" && exit 0"
+    "dev": "vite build --watch",
+    "build": "tsc && vite build",
+    "lint": "eslint src --ext .ts,.tsx",
+    "lint:fix": "eslint src --ext .ts,.tsx --fix",
+    "type-check": "tsc --noEmit",
+    "format": "prettier --write \"src/**/*.{ts,tsx,json}\"",
+    "clean": "rimraf dist"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/nolancacheux/chess-cheat-assistant.git"
+    "url": "https://github.com/nolancacheux/AI-Chess-Assistant.git"
   },
   "author": "Nolan Cacheux",
   "license": "MIT",
   "keywords": [
     "chess",
-    "chess.com",
-    "chess assistant",
-    "browser extension",
     "stockfish",
-    "move suggestion",
-    "position evaluation",
-    "advantage tracking",
-    "auto play",
-    "chess improvement",
-    "educational",
-    "learning",
-    "javascript",
-    "chrome extension",
-    "move analysis",
-    "board automation",
-    "chess engine",
-    "user interface",
-    "real-time analysis",
-    "move highlighting",
-    "open source"
+    "chrome-extension",
+    "typescript",
+    "ai",
+    "machine-learning",
+    "position-analysis",
+    "chess-engine",
+    "real-time-analysis"
   ],
   "bugs": {
-    "url": "https://github.com/nolancacheux/chess-cheat-assistant/issues"
+    "url": "https://github.com/nolancacheux/AI-Chess-Assistant/issues"
   },
-  "homepage": "https://github.com/nolancacheux/chess-cheat-assistant#readme",
-  "dependencies": {
-    "stockfish.wasm": "^0.10.0"
+  "homepage": "https://github.com/nolancacheux/AI-Chess-Assistant#readme",
+  "devDependencies": {
+    "@crxjs/vite-plugin": "^2.0.0-beta.25",
+    "@types/chrome": "^0.0.268",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-import": "^2.29.1",
+    "prettier": "^3.2.5",
+    "rimraf": "^5.0.5",
+    "typescript": "^5.4.0",
+    "vite": "^5.2.0"
   },
   "engines": {
-    "node": ">=14.0.0",
-    "npm": ">=6.0.0"
+    "node": ">=18.0.0"
   }
 }
