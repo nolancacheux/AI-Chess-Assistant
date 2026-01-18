@@ -135,12 +135,13 @@ src/
    ```bash
    npm run build
    ```
+   This creates a `dist/` folder with the compiled extension.
 
 4. **Load in Chrome**
    - Navigate to `chrome://extensions/`
-   - Enable **Developer Mode**
+   - Enable **Developer Mode** (toggle in top-right corner)
    - Click **Load Unpacked**
-   - Select the `dist/` folder
+   - Select the `dist/` folder from this project (e.g., `AI-Chess-Assistant/dist/`)
 
 5. **Use the extension**
    - Go to [chess.com](https://chess.com)
