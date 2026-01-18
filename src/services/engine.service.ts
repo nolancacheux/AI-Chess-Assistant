@@ -35,90 +35,56 @@ export class EngineService {
 
   /**
    * Initialize the Stockfish engine
-   * Uses our bundled Stockfish via blob URL workaround for MV3
+   * Uses chess.com's bundled Stockfish (same approach as original working version)
    */
   public initialize(): boolean {
-    // Try bundled engine first (most reliable)
-    if (this.tryBundledEngine()) {
-      return true;
+    // Chess.com Stockfish paths (relative to chess.com domain)
+    const stockfishPaths = [
+      '/bundles/app/js/vendor/jschessengine/stockfish.asm.1abfa10c.js',
+      '/bundles/app/js/vendor/stockfish.wasm/stockfish.js',
+      '/bundles/app/js/vendor/stockfish.js',
+    ];
+
+    for (const path of stockfishPaths) {
+      try {
+        console.log('[EngineService] Trying:', path);
+        this.worker = new Worker(path);
+        this.setupMessageHandler();
+        this.worker.postMessage('uci');
+        this.state = 'idle';
+        this.emit({ type: 'ready', data: null });
+        console.log('[EngineService] Successfully loaded from:', path);
+        return true;
+      } catch (error) {
+        console.log('[EngineService] Failed:', path);
+        this.worker = null;
+      }
+    }
+
+    // Try to find Stockfish script dynamically
+    const scripts = document.querySelectorAll('script[src*="stockfish"]');
+    for (const script of scripts) {
+      try {
+        const src = (script as HTMLScriptElement).src;
+        const path = new URL(src).pathname;
+        console.log('[EngineService] Found script, trying:', path);
+        this.worker = new Worker(path);
+        this.setupMessageHandler();
+        this.worker.postMessage('uci');
+        this.state = 'idle';
+        this.emit({ type: 'ready', data: null });
+        console.log('[EngineService] Successfully loaded from:', path);
+        return true;
+      } catch (error) {
+        console.log('[EngineService] Script failed');
+        this.worker = null;
+      }
     }
 
     console.error('[EngineService] Failed to initialize engine');
     this.state = 'error';
     this.emit({ type: 'error', data: new Error('No engine available') });
     return false;
-  }
-
-  /**
-   * Try to use our bundled Stockfish engine via blob URL workaround
-   */
-  private tryBundledEngine(): boolean {
-    try {
-      if (typeof chrome === 'undefined' || !chrome.runtime?.getURL) {
-        console.log('[EngineService] Not in extension context');
-        return false;
-      }
-
-      const workerUrl = chrome.runtime.getURL(this.config.workerPath);
-      const wasmUrl = chrome.runtime.getURL('engine/stockfish.wasm');
-      console.log('[EngineService] Loading bundled engine from:', workerUrl);
-
-      // Fetch the worker script
-      const jsXhr = new XMLHttpRequest();
-      jsXhr.open('GET', workerUrl, false);
-      jsXhr.send();
-
-      if (jsXhr.status !== 200) {
-        console.error('[EngineService] Failed to fetch worker script:', jsXhr.status);
-        return false;
-      }
-
-      // Fetch the WASM binary
-      const wasmXhr = new XMLHttpRequest();
-      wasmXhr.open('GET', wasmUrl, false);
-      wasmXhr.responseType = 'arraybuffer';
-      wasmXhr.send();
-
-      if (wasmXhr.status !== 200) {
-        console.error('[EngineService] Failed to fetch WASM:', wasmXhr.status);
-        return false;
-      }
-
-      // Convert WASM to base64 for embedding
-      const wasmBytes = new Uint8Array(wasmXhr.response);
-      let wasmBase64 = '';
-      const chunkSize = 32768;
-      for (let i = 0; i < wasmBytes.length; i += chunkSize) {
-        const chunk = wasmBytes.subarray(i, Math.min(i + chunkSize, wasmBytes.length));
-        wasmBase64 += String.fromCharCode.apply(null, Array.from(chunk));
-      }
-      wasmBase64 = btoa(wasmBase64);
-
-      // Create wrapper that provides the WASM binary directly
-      const wrapper = `
-        var wasmBinaryBase64 = "${wasmBase64}";
-        var wasmBinary = Uint8Array.from(atob(wasmBinaryBase64), c => c.charCodeAt(0));
-        var Module = {
-          wasmBinary: wasmBinary.buffer,
-          locateFile: function(path) { return path; }
-        };
-        ${jsXhr.responseText}
-      `;
-
-      const blob = new Blob([wrapper], { type: 'application/javascript' });
-      const blobUrl = URL.createObjectURL(blob);
-
-      this.worker = new Worker(blobUrl);
-      this.setupMessageHandler();
-      this.worker.postMessage('uci');
-      this.state = 'idle';
-      this.emit({ type: 'ready', data: null });
-      console.log('[EngineService] Successfully loaded bundled engine via blob');
-      return true;
-    } catch (error) {
-      console.error('[EngineService] Bundled engine failed:', error);
-      return false;
-    }
   }
 
   /**
