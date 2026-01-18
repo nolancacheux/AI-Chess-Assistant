@@ -64,26 +64,45 @@ export class EngineService {
       console.log('[EngineService] Loading bundled engine from:', workerUrl);
 
       // Fetch the worker script
-      const xhr = new XMLHttpRequest();
-      xhr.open('GET', workerUrl, false);
-      xhr.send();
+      const jsXhr = new XMLHttpRequest();
+      jsXhr.open('GET', workerUrl, false);
+      jsXhr.send();
 
-      if (xhr.status !== 200) {
-        console.error('[EngineService] Failed to fetch worker script:', xhr.status);
+      if (jsXhr.status !== 200) {
+        console.error('[EngineService] Failed to fetch worker script:', jsXhr.status);
         return false;
       }
 
-      // Create wrapper that sets up Module.locateFile before loading stockfish
+      // Fetch the WASM binary
+      const wasmXhr = new XMLHttpRequest();
+      wasmXhr.open('GET', wasmUrl, false);
+      wasmXhr.responseType = 'arraybuffer';
+      wasmXhr.send();
+
+      if (wasmXhr.status !== 200) {
+        console.error('[EngineService] Failed to fetch WASM:', wasmXhr.status);
+        return false;
+      }
+
+      // Convert WASM to base64 for embedding
+      const wasmBytes = new Uint8Array(wasmXhr.response);
+      let wasmBase64 = '';
+      const chunkSize = 32768;
+      for (let i = 0; i < wasmBytes.length; i += chunkSize) {
+        const chunk = wasmBytes.subarray(i, Math.min(i + chunkSize, wasmBytes.length));
+        wasmBase64 += String.fromCharCode.apply(null, Array.from(chunk));
+      }
+      wasmBase64 = btoa(wasmBase64);
+
+      // Create wrapper that provides the WASM binary directly
       const wrapper = `
+        var wasmBinaryBase64 = "${wasmBase64}";
+        var wasmBinary = Uint8Array.from(atob(wasmBinaryBase64), c => c.charCodeAt(0));
         var Module = {
-          locateFile: function(path) {
-            if (path.endsWith('.wasm')) {
-              return "${wasmUrl}";
-            }
-            return path;
-          }
+          wasmBinary: wasmBinary.buffer,
+          locateFile: function(path) { return path; }
         };
-        ${xhr.responseText}
+        ${jsXhr.responseText}
       `;
 
       const blob = new Blob([wrapper], { type: 'application/javascript' });
