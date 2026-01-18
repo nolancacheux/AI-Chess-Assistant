@@ -21,7 +21,6 @@ interface PanelCallbacks {
 export class PanelComponent {
   private panel: HTMLElement | null = null;
   private callbacks: PanelCallbacks;
-  private isCollapsed = false;
   private isAutoPlayActive = false;
   private isDragging = false;
   private dragOffset = { x: 0, y: 0 };
@@ -428,14 +427,12 @@ export class PanelComponent {
     // Collapse
     panel.querySelector('#ca-collapse')?.addEventListener('click', (e) => {
       e.stopPropagation();
-      this.isCollapsed = true;
       panel.classList.add('ca-collapsed');
     });
 
     // Expand from mini (only if not dragged)
     panel.querySelector('#ca-mini')?.addEventListener('click', () => {
       if (!this.hasDragged) {
-        this.isCollapsed = false;
         panel.classList.remove('ca-collapsed');
       }
     });
