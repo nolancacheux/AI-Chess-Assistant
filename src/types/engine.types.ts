@@ -50,6 +50,6 @@ export type EngineEventListener = (event: EngineEvent) => void;
 /** Default engine configuration */
 export const DEFAULT_ENGINE_CONFIG: EngineConfig = {
   workerPath: 'engine/stockfish.js', // Relative path, will be resolved to extension URL
-  defaultDepth: 15,
-  autoPlayDepth: 5, // Increased for better auto-play with our own engine
+  defaultDepth: 12, // Balanced depth for analysis
+  autoPlayDepth: 6, // Quick analysis for auto-play
 };

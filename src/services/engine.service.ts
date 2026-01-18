@@ -17,6 +17,8 @@ import { DEFAULT_ENGINE_CONFIG } from '@/types';
 /**
  * Engine Service - Manages Stockfish web worker
  */
+const ANALYSIS_TIMEOUT = 10000; // 10 seconds max
+
 export class EngineService {
   private worker: Worker | null = null;
   private state: EngineState = 'idle';
@@ -25,6 +27,7 @@ export class EngineService {
   private currentBestMove: UCIMove | null = null;
   private currentScore: Score | null = null;
   private currentDepth: Depth = 0;
+  private analysisTimeout: ReturnType<typeof setTimeout> | null = null;
 
   constructor(config: Partial<EngineConfig> = {}) {
     this.config = { ...DEFAULT_ENGINE_CONFIG, ...config };
@@ -55,11 +58,20 @@ export class EngineService {
    * Try to use chess.com's bundled Stockfish engine
    */
   private tryChessComEngine(): boolean {
-    const chessComPaths = [
-      'https://www.chess.com/bundles/app/js/vendor/stockfish-nnue.wasm-42c6fbd7/sf17-79.js',
-      'https://www.chess.com/bundles/app/js/vendor/stockfish.nnue.16-6.js',
-      'https://www.chess.com/bundles/app/js/vendor/stockfish.wasm-2022/stockfish.js',
+    // Find Stockfish script tags on the page
+    const scripts = Array.from(document.querySelectorAll('script[src*="stockfish"]'));
+    const stockfishPaths = scripts
+      .map((s) => (s as HTMLScriptElement).src)
+      .filter((src) => src.includes('stockfish'));
+
+    // Common chess.com Stockfish paths (updated)
+    const defaultPaths = [
+      'https://www.chess.com/bundles/app/js/vendor/stockfish-nnue.wasm/sf17-79.js',
+      'https://www.chess.com/bundles/app/js/vendor/stockfish.nnue.wasm.js',
+      'https://www.chess.com/bundles/app/js/lib/stockfish.wasm.js',
     ];
+
+    const chessComPaths = [...stockfishPaths, ...defaultPaths];
 
     for (const path of chessComPaths) {
       try {
@@ -120,14 +132,37 @@ export class EngineService {
       return;
     }
 
+    // Clear any existing timeout
+    if (this.analysisTimeout) {
+      clearTimeout(this.analysisTimeout);
+    }
+
     const analysisDepth = depth ?? this.config.defaultDepth;
     this.state = 'analyzing';
     this.currentBestMove = null;
     this.currentScore = null;
     this.currentDepth = 0;
 
+    console.log('[EngineService] Starting analysis, depth:', analysisDepth);
     this.worker.postMessage(`position fen ${fen}`);
     this.worker.postMessage(`go depth ${analysisDepth}`);
+
+    // Set timeout to force completion if engine takes too long
+    this.analysisTimeout = setTimeout(() => {
+      if (this.state === 'analyzing' && this.currentBestMove) {
+        console.log('[EngineService] Timeout reached, using current best move');
+        this.state = 'idle';
+        this.emit({
+          type: 'bestmove',
+          data: {
+            bestMove: this.currentBestMove,
+            score: this.currentScore,
+            depth: this.currentDepth,
+            pv: [this.currentBestMove],
+          },
+        });
+      }
+    }, ANALYSIS_TIMEOUT);
   }
 
   /**
@@ -205,11 +240,22 @@ export class EngineService {
 
       if (typeof message !== 'string') return;
 
+      // Log all messages for debugging
+      if (message.startsWith('bestmove') || message.includes('depth')) {
+        console.log('[EngineService] Message:', message.substring(0, 100));
+      }
+
       if (message.startsWith('bestmove')) {
         this.handleBestMove(message);
-      } else if (message.startsWith('info')) {
+      } else if (message.startsWith('info') && message.includes('depth')) {
         this.handleInfo(message);
       }
+    };
+
+    this.worker.onerror = (error) => {
+      console.error('[EngineService] Worker error:', error);
+      this.state = 'error';
+      this.emit({ type: 'error', data: new Error('Worker error') });
     };
   }
 
@@ -217,11 +263,24 @@ export class EngineService {
    * Handle bestmove message
    */
   private handleBestMove(message: string): void {
+    // Clear timeout since we got a response
+    if (this.analysisTimeout) {
+      clearTimeout(this.analysisTimeout);
+      this.analysisTimeout = null;
+    }
+
     const parts = message.split(' ');
     const bestMove = parts[1];
 
+    if (!bestMove || bestMove === '(none)') {
+      console.log('[EngineService] No valid move found');
+      return;
+    }
+
     this.currentBestMove = bestMove;
     this.state = 'idle';
+
+    console.log('[EngineService] Best move:', bestMove, 'Score:', this.currentScore);
 
     this.emit({
       type: 'bestmove',
