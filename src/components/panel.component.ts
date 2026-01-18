@@ -355,6 +355,21 @@ export class PanelComponent {
       }
 
       .ca-collapsed .ca-body { display: none; }
+      .ca-collapsed .ca-header { display: none; }
+
+      .ca-mini {
+        display: none;
+        width: 40px;
+        height: 40px;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        opacity: 0.5;
+        transition: opacity 0.2s;
+        font-size: 24px;
+      }
+      .ca-mini:hover { opacity: 0.8; }
+      .ca-collapsed .ca-mini { display: flex; }
     `;
     document.head.appendChild(style);
   }
@@ -364,6 +379,7 @@ export class PanelComponent {
     panel.id = PANEL_ID;
 
     panel.innerHTML = `
+      <div class="ca-mini" id="ca-mini" title="Expand">♟</div>
       <div class="ca-header" id="ca-header">
         <span class="ca-title">Chess Assistant</span>
         <button class="ca-header-btn" id="ca-collapse" title="Minimize">−</button>
@@ -404,10 +420,14 @@ export class PanelComponent {
     // Collapse
     panel.querySelector('#ca-collapse')?.addEventListener('click', (e) => {
       e.stopPropagation();
-      this.isCollapsed = !this.isCollapsed;
-      panel.classList.toggle('ca-collapsed', this.isCollapsed);
-      const btn = panel.querySelector('#ca-collapse') as HTMLElement;
-      if (btn) btn.textContent = this.isCollapsed ? '+' : '−';
+      this.isCollapsed = true;
+      panel.classList.add('ca-collapsed');
+    });
+
+    // Expand from mini
+    panel.querySelector('#ca-mini')?.addEventListener('click', () => {
+      this.isCollapsed = false;
+      panel.classList.remove('ca-collapsed');
     });
 
     // Main button
