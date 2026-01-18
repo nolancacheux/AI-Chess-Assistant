@@ -3,6 +3,7 @@
  */
 
 import type { AnalysisEntry, ColorSelectionCallback, PlayerColor, Score } from '@/types';
+import type { OpeningInfo } from '@/services/openingbook.service';
 import { DEFAULT_THEME } from '@/types';
 import { createElement } from '@/utils';
 import { getMoveRating, scoreToPercentage } from '@/utils/chess.utils';
@@ -152,6 +153,49 @@ export class PanelComponent {
   }
 
   /**
+   * Update opening information display
+   */
+  public updateOpeningInfo(info: OpeningInfo): void {
+    const openingElement = document.getElementById('opening-info');
+    if (!openingElement) return;
+
+    if (!info.isInBook && !info.name) {
+      openingElement.style.display = 'none';
+      return;
+    }
+
+    openingElement.style.display = 'block';
+
+    const ecoDisplay = info.eco ? `<span style="color: ${DEFAULT_THEME.accent}; font-weight: bold;">[${info.eco}]</span> ` : '';
+    const nameDisplay = info.name || 'Unknown Opening';
+    const descDisplay = info.description ? `<div style="font-size: 0.85em; color: ${DEFAULT_THEME.textMuted}; margin-top: 4px;">${info.description}</div>` : '';
+
+    let bookMovesHtml = '';
+    if (info.bookMoves.length > 0) {
+      bookMovesHtml = `
+        <div style="margin-top: 8px; font-size: 0.9em;">
+          <strong>Book moves:</strong>
+          ${info.bookMoves
+            .slice(0, 3)
+            .map(
+              (m) =>
+                `<span style="display: inline-block; margin: 2px 4px; padding: 2px 6px; background: ${DEFAULT_THEME.surface}; border-radius: 3px;">
+                  ${m.move} <span style="color: ${DEFAULT_THEME.success};">${(m.winRate * 100).toFixed(0)}%</span>
+                </span>`
+            )
+            .join('')}
+        </div>
+      `;
+    }
+
+    openingElement.innerHTML = `
+      <div style="font-size: 1.1em;">${ecoDisplay}${nameDisplay}</div>
+      ${descDisplay}
+      ${bookMovesHtml}
+    `;
+  }
+
+  /**
    * Update advantage indicator
    */
   public updateAdvantage(score: Score | null): void {
@@ -245,6 +289,7 @@ export class PanelComponent {
     content.id = 'assistant-content';
 
     content.appendChild(this.createColorSelection());
+    content.appendChild(this.createOpeningInfoDisplay());
     content.appendChild(this.createAdvantageIndicator());
     content.appendChild(this.createStatusDisplay());
     content.appendChild(this.createAutoPlayButton());
@@ -308,6 +353,23 @@ export class PanelComponent {
     };
 
     return button;
+  }
+
+  /**
+   * Create opening info display
+   */
+  private createOpeningInfoDisplay(): HTMLElement {
+    const container = createElement('div', {
+      display: 'none',
+      margin: '10px 0',
+      padding: '12px',
+      background: `linear-gradient(135deg, ${DEFAULT_THEME.surface} 0%, #e8f4f8 100%)`,
+      borderRadius: '6px',
+      borderLeft: `4px solid ${DEFAULT_THEME.accent}`,
+    });
+    container.id = 'opening-info';
+
+    return container;
   }
 
   /**

@@ -6,7 +6,7 @@ import type { AnalysisEntry, EngineEvent, PlayerColor } from '@/types';
 import { DEFAULT_ENGINE_CONFIG } from '@/types';
 import { PanelComponent, clearHighlights, displayMoveHighlight } from '@/components';
 import { AnalysisManager, AutoPlayManager } from '@/core';
-import { EngineService, boardService } from '@/services';
+import { EngineService, boardService, openingBookService } from '@/services';
 
 const POLLING_INTERVAL = 500;
 
@@ -123,12 +123,22 @@ export class ChessAssistant {
     const isFinal = event.type === 'bestmove';
     this.analysisManager.addEntry(move, score, depth, isFinal);
 
+    // Update opening book info
+    const fen = boardService.generateFEN();
+    const openingInfo = openingBookService.getOpeningInfo(fen);
+    this.panel.updateOpeningInfo(openingInfo);
+
+    // Build status with opening info
+    let statusText = isFinal
+      ? `Suggested Move: ${move}`
+      : `Depth: ${depth} | Score: ${score} | Move: ${move}`;
+
+    if (openingInfo.isInBook && openingInfo.suggestedMove) {
+      statusText += ` | Book: ${openingInfo.suggestedMove}`;
+    }
+
     // Update UI
-    this.panel.updateStatus(
-      isFinal
-        ? `Suggested Move: ${move}`
-        : `Depth: ${depth} | Score: ${score} | Move: ${move}`
-    );
+    this.panel.updateStatus(statusText);
     this.panel.updateHistory(this.analysisManager.getHistory());
     this.panel.updateAdvantage(score);
 
