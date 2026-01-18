@@ -4,6 +4,7 @@
 
 import type { AnalysisEntry, ColorSelectionCallback, PlayerColor, Score } from '@/types';
 import type { OpeningInfo } from '@/services/openingbook.service';
+import type { PatternAnalysis } from '@/services/patterns.service';
 import { DEFAULT_THEME } from '@/types';
 import { createElement } from '@/utils';
 import { getMoveRating, scoreToPercentage } from '@/utils/chess.utils';
@@ -196,6 +197,58 @@ export class PanelComponent {
   }
 
   /**
+   * Update pattern analysis display
+   */
+  public updatePatternInfo(analysis: PatternAnalysis): void {
+    const patternElement = document.getElementById('pattern-info');
+    if (!patternElement) return;
+
+    if (analysis.patterns.length === 0) {
+      patternElement.style.display = 'none';
+      return;
+    }
+
+    patternElement.style.display = 'block';
+
+    const severityColors = {
+      critical: '#e74c3c',
+      important: '#f39c12',
+      minor: '#3498db',
+    };
+
+    const categoryIcons = {
+      tactical: '⚔️',
+      positional: '📍',
+      structural: '🏗️',
+    };
+
+    const patternsHtml = analysis.patterns
+      .slice(0, 5)
+      .map(
+        (p) => `
+        <div style="display: flex; align-items: center; margin: 4px 0; padding: 4px 8px; background: ${DEFAULT_THEME.surface}; border-radius: 4px; border-left: 3px solid ${severityColors[p.severity]};">
+          <span style="margin-right: 6px;">${categoryIcons[p.category]}</span>
+          <span style="font-weight: 500;">${p.name}</span>
+          ${p.squares?.length ? `<span style="margin-left: auto; color: ${DEFAULT_THEME.textMuted}; font-size: 0.85em;">${p.squares.join(', ')}</span>` : ''}
+        </div>
+      `
+      )
+      .join('');
+
+    const evalColor = analysis.evaluation >= 0 ? DEFAULT_THEME.success : '#e74c3c';
+    const evalSign = analysis.evaluation >= 0 ? '+' : '';
+
+    patternElement.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <strong>Position Patterns</strong>
+        <span style="color: ${evalColor}; font-weight: bold;">${evalSign}${analysis.evaluation.toFixed(2)}</span>
+      </div>
+      <div style="font-size: 0.9em; color: ${DEFAULT_THEME.textMuted}; margin-bottom: 8px;">${analysis.summary}</div>
+      ${patternsHtml}
+    `;
+  }
+
+  /**
    * Update advantage indicator
    */
   public updateAdvantage(score: Score | null): void {
@@ -290,6 +343,7 @@ export class PanelComponent {
 
     content.appendChild(this.createColorSelection());
     content.appendChild(this.createOpeningInfoDisplay());
+    content.appendChild(this.createPatternDisplay());
     content.appendChild(this.createAdvantageIndicator());
     content.appendChild(this.createStatusDisplay());
     content.appendChild(this.createAutoPlayButton());
@@ -368,6 +422,23 @@ export class PanelComponent {
       borderLeft: `4px solid ${DEFAULT_THEME.accent}`,
     });
     container.id = 'opening-info';
+
+    return container;
+  }
+
+  /**
+   * Create pattern analysis display
+   */
+  private createPatternDisplay(): HTMLElement {
+    const container = createElement('div', {
+      display: 'none',
+      margin: '10px 0',
+      padding: '12px',
+      background: DEFAULT_THEME.surface,
+      borderRadius: '6px',
+      border: `1px solid ${DEFAULT_THEME.border}`,
+    });
+    container.id = 'pattern-info';
 
     return container;
   }
